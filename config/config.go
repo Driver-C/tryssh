@@ -81,7 +81,7 @@ func LoadConfig() (c *MainConfig) {
 		}
 		unmarshalErr := yaml.Unmarshal(conf, c)
 		if unmarshalErr != nil {
-			log.Fatalln("Configuration file parsing failed: ", err)
+			log.Fatalln("Configuration file parsing failed: ", unmarshalErr)
 		} else {
 			if len(c.Main.Ports) == 0 || len(c.Main.Users) == 0 || len(c.Main.Passwords) == 0 {
 				log.Warnln("Main setting is empty. " +
