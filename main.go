@@ -3,15 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/schwarmco/go-cartesian-product"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"tryssh/config"
 	"tryssh/launcher"
-	"tryssh/target"
+	"tryssh/utils"
 )
 
 const (
-	VERSION = "1.0.1"
+	VERSION = "1.0.2"
 )
 
 func main() {
@@ -33,22 +34,18 @@ func main() {
 }
 
 // generateCombination 生成所有端口、用户、密码组合的对象
-func generateCombination(ip string, conf *config.MainConfig) (lan []*launcher.SshLauncher) {
-	for _, port := range conf.Main.Ports {
-		for _, user := range conf.Main.Users {
-			for _, password := range conf.Main.Passwords {
-				lan = append(lan, &launcher.SshLauncher{
-					SshTarget: target.SshTarget{Ip: ip, Port: port, User: user, Password: password},
-				})
-			}
-		}
-	}
+func generateCombination(ip string, conf *config.MainConfig) (lan []launcher.SshLauncher) {
+	ips := []interface{}{ip}
+	ports := utils.InterfaceSlice(conf.Main.Ports)
+	users := utils.InterfaceSlice(conf.Main.Users)
+	passwords := utils.InterfaceSlice(conf.Main.Passwords)
+	// 生成组合 参数顺序不可变
+	combinations := cartesian.Iter(ips, ports, users, passwords)
+	lan = launcher.NewSshLaunchersByCombinations(combinations)
 	return
 }
 
 func tryLogin(targetIp string, configuration *config.MainConfig) {
-	// 获取连接器对象
-	launchers := generateCombination(targetIp, configuration)
 	// 搜索缓存
 	targetServer, cacheIndex, isFound := config.SelectServerCache(targetIp, configuration)
 
@@ -63,6 +60,8 @@ func tryLogin(targetIp string, configuration *config.MainConfig) {
 			os.Exit(0)
 		} else {
 			log.Errorln("Failed to log in with cached information. The password will be guessed again\n\n")
+			// 获取连接器对象
+			launchers := generateCombination(targetIp, configuration)
 			for _, lan := range launchers {
 				if lan.Launch() {
 					log.Infoln("Login succeeded. The cache will be updated.\n")
@@ -79,6 +78,8 @@ func tryLogin(targetIp string, configuration *config.MainConfig) {
 		}
 	} else {
 		log.Warnf("The cache for %s could not be found. The password will be guessed.\n\n", targetIp)
+		// 获取连接器对象
+		launchers := generateCombination(targetIp, configuration)
 		for _, lan := range launchers {
 			if lan.Launch() {
 				log.Infoln("Login succeeded. The cache will be added.\n")

@@ -11,7 +11,7 @@ import (
 
 const (
 	sshProtocol      string = "tcp"
-	sshClientTimeout        = 10000 * time.Millisecond
+	sshClientTimeout        = 500 * time.Millisecond
 )
 
 // SshLauncher ssh终端连接器
@@ -22,6 +22,18 @@ type SshLauncher struct {
 // Launch 执行
 func (h *SshLauncher) Launch() bool {
 	return h.DialServer()
+}
+
+func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers []SshLauncher) {
+	for com := range combinations {
+		launchers = append(launchers, SshLauncher{SshTarget: target.SshTarget{
+			Ip:       com[0].(string),
+			Port:     com[1].(string),
+			User:     com[2].(string),
+			Password: com[3].(string),
+		}})
+	}
+	return
 }
 
 // LoadConfig 构造连接配置
