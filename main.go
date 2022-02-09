@@ -2,11 +2,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"tryssh/config"
 	"tryssh/launcher"
 	"tryssh/target"
+)
+
+const (
+	VERSION = "1.0.1"
 )
 
 func main() {
@@ -91,11 +96,20 @@ func tryLogin(targetIp string, configuration *config.MainConfig) {
 
 // flagsParse 解析命令行参数
 func flagsParse() []string {
+	// 参数定义
+	ver := flag.Bool("v", false, "Show Version")
 	flag.Usage = func() {
-		log.Infoln("Usage: tryssh [IpAddress]\n\n")
+		fmt.Println("Usage: tryssh [IpAddress]")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	// 命名参数处理
+	if *ver {
+		log.Infof("Tryssh Version: %s", VERSION)
+	}
+
+	// 未命名参数处理
 	args := flag.Args()
 	if len(args) != 1 {
 		log.Errorln("Wrong number of parameters. There can only be one\n\n")
