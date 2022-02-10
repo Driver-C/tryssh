@@ -24,6 +24,7 @@ func (h *SshLauncher) Launch() bool {
 	return h.DialServer()
 }
 
+// NewSshLaunchersByCombinations 通过用户、密码和端口的组合生成SshLauncher对象切片
 func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers []SshLauncher) {
 	for com := range combinations {
 		launchers = append(launchers, SshLauncher{SshTarget: target.SshTarget{
@@ -50,32 +51,53 @@ func (h *SshLauncher) LoadConfig() (config *ssh.ClientConfig) {
 	return
 }
 
-// DialServer 连接服务器
-func (h *SshLauncher) DialServer() (res bool) {
-	res = false
+// CreateConnection 创建连接
+func (h *SshLauncher) CreateConnection() (sshClient *ssh.Client, err error) {
 	addr := h.Ip + ":" + h.Port
 	config := h.LoadConfig()
 
-	conn, err := ssh.Dial(sshProtocol, addr, config)
+	sshClient, err = ssh.Dial(sshProtocol, addr, config)
 	if err != nil {
 		log.Warnf("Unable to connect: %s@%s, Password:%s Cause: %s",
 			h.User, addr, h.Password, err.Error())
-		return
-	} else {
-		log.Infoln("[ LOGIN SUCCESSFUL ]\n")
-		log.Infoln("User:", conn.User())
-		log.Infoln("Password:", h.Password)
-		log.Infoln("Ssh Server Version:", string(conn.ServerVersion()))
-		log.Infof("Ssh Client Version: %s\n\n", string(conn.ClientVersion()))
-		res = true
-		h.CreateTerminal(conn)
 	}
-	defer func(conn *ssh.Client) {
-		err := conn.Close()
-		if err != nil {
-			log.Errorln("Unable to close connection: ", err.Error())
-		}
-	}(conn)
+	return
+}
+
+// CloseConnection 关闭连接
+func (h *SshLauncher) CloseConnection(sshClient *ssh.Client) {
+	err := sshClient.Close()
+	if err != nil {
+		log.Errorln("Unable to close connection: ", err.Error())
+	}
+}
+
+// TryToConnect 尝试创建连接
+func (h *SshLauncher) TryToConnect() (err error) {
+	sshClient, err := h.CreateConnection()
+	if err != nil {
+		return
+	}
+	defer h.CloseConnection(sshClient)
+	return
+}
+
+// DialServer 连接服务器
+func (h *SshLauncher) DialServer() (res bool) {
+	res = false
+	sshClient, err := h.CreateConnection()
+	if err == nil {
+		log.Infoln("[ LOGIN SUCCESSFUL ]\n")
+		log.Infoln("User:", sshClient.User())
+		log.Infoln("Password:", h.Password)
+		log.Infoln("Ssh Server Version:", string(sshClient.ServerVersion()))
+		log.Infof("Ssh Client Version: %s\n\n", string(sshClient.ClientVersion()))
+		res = true
+		h.CreateTerminal(sshClient)
+	} else {
+		return
+	}
+	defer h.CloseConnection(sshClient)
 	return
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	VERSION = "1.0.2"
+	VERSION = "1.0.3"
 )
 
 func main() {
@@ -34,64 +34,65 @@ func main() {
 }
 
 // generateCombination 生成所有端口、用户、密码组合的对象
-func generateCombination(ip string, conf *config.MainConfig) (lan []launcher.SshLauncher) {
+func generateCombination(ip string, conf *config.MainConfig) (combinations chan []interface{}) {
 	ips := []interface{}{ip}
 	ports := utils.InterfaceSlice(conf.Main.Ports)
 	users := utils.InterfaceSlice(conf.Main.Users)
 	passwords := utils.InterfaceSlice(conf.Main.Passwords)
 	// 生成组合 参数顺序不可变
-	combinations := cartesian.Iter(ips, ports, users, passwords)
-	lan = launcher.NewSshLaunchersByCombinations(combinations)
+	combinations = cartesian.Iter(ips, ports, users, passwords)
 	return
 }
 
+// tryLogin 程序入口
 func tryLogin(targetIp string, configuration *config.MainConfig) {
 	// 搜索缓存
 	targetServer, cacheIndex, isFound := config.SelectServerCache(targetIp, configuration)
 
 	// 执行登陆逻辑
 	if isFound {
-		lan := &launcher.SshLauncher{
-			SshTarget: *config.GetTargetFromConfig(targetServer),
-		}
-		// 判断缓存连接是否成功，不成功则重新尝试连接
 		log.Infof("The cache for %s is found, which will be used to try.\n", targetIp)
-		if lan.Launch() {
-			os.Exit(0)
-		} else {
-			log.Errorln("Failed to log in with cached information. The password will be guessed again\n\n")
-			// 获取连接器对象
-			launchers := generateCombination(targetIp, configuration)
-			for _, lan := range launchers {
-				if lan.Launch() {
-					log.Infoln("Login succeeded. The cache will be updated.\n")
-					if config.UpdateServerCache(
-						cacheIndex, config.GetConfigFromTarget(&lan.SshTarget), configuration) {
-						log.Infoln("Cache updated.\n")
-					} else {
-						log.Errorln("Cache update failed.\n\n")
-					}
-					os.Exit(0)
-				}
-			}
-			log.Fatalln("There is no password combination that can log in successfully\n")
-		}
+		tryLoginWithCache(targetIp, configuration, targetServer, cacheIndex)
 	} else {
 		log.Warnf("The cache for %s could not be found. The password will be guessed.\n\n", targetIp)
-		// 获取连接器对象
-		launchers := generateCombination(targetIp, configuration)
-		for _, lan := range launchers {
-			if lan.Launch() {
-				log.Infoln("Login succeeded. The cache will be added.\n")
-				if config.AddServerCache(config.GetConfigFromTarget(&lan.SshTarget), configuration) {
-					log.Infoln("Cache updated.\n")
-				} else {
-					log.Errorln("Cache update failed.\n\n")
-				}
-				os.Exit(0)
-			}
+		tryLoginWithoutCache(targetIp, configuration)
+	}
+	log.Fatalln("There is no password combination that can log in successfully\n")
+}
+
+// tryLoginWithCache 尝试用缓存连接，判断缓存连接是否成功，不成功则重新猜密码
+func tryLoginWithCache(targetIp string, configuration *config.MainConfig,
+	targetServer *config.ServerListConfig, cacheIndex int) {
+	lan := &launcher.SshLauncher{
+		SshTarget: *config.GetTargetFromConfig(targetServer),
+	}
+	if lan.Launch() {
+		os.Exit(0)
+	} else {
+		log.Errorln("Failed to log in with cached information. The password will be guessed again\n\n")
+		if config.DeleteServerCache(cacheIndex, configuration) {
+			log.Infoln("Delete server cache successful.\n")
+			tryLoginWithoutCache(targetIp, configuration)
 		}
-		log.Fatalln("There is no password combination that can log in successfully\n")
+	}
+}
+
+// tryLoginWithoutCache 猜密码登陆
+func tryLoginWithoutCache(targetIp string, configuration *config.MainConfig) {
+	// 获取连接器对象
+	combinations := generateCombination(targetIp, configuration)
+	launchers := launcher.NewSshLaunchersByCombinations(combinations)
+	for _, lan := range launchers {
+		if err := lan.TryToConnect(); err == nil {
+			log.Infoln("Login succeeded. The cache will be added.\n")
+			if config.AddServerCache(config.GetConfigFromTarget(&lan.SshTarget), configuration) {
+				log.Infoln("Cache updated.\n\n")
+				lan.Launch()
+			} else {
+				log.Errorln("Cache update failed.\n\n")
+			}
+			os.Exit(0)
+		}
 	}
 }
 
