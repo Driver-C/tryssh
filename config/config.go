@@ -103,7 +103,7 @@ func SelectServerCache(ip string, conf *MainConfig) (*ServerListConfig, int, boo
 			return &server, index, true
 		}
 	}
-	return &ServerListConfig{}, 0, false
+	return nil, 0, false
 }
 
 // AddServerCache 新增缓存

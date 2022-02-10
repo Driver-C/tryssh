@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	VERSION = "1.0.3"
+	VERSION = "1.0.4"
 )
 
 func main() {
@@ -109,6 +109,7 @@ func flagsParse() []string {
 	// 命名参数处理
 	if *ver {
 		log.Infof("Tryssh Version: %s", VERSION)
+		os.Exit(0)
 	}
 
 	// 未命名参数处理
