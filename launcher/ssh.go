@@ -5,29 +5,22 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
-	"time"
-	"tryssh/target"
-)
-
-const (
-	sshProtocol      string = "tcp"
-	sshClientTimeout        = 500 * time.Millisecond
 )
 
 // SshLauncher ssh终端连接器
 type SshLauncher struct {
-	target.SshTarget
+	SshConnector
 }
 
 // Launch 执行
 func (h *SshLauncher) Launch() bool {
-	return h.DialServer()
+	return h.dialServer()
 }
 
 // NewSshLaunchersByCombinations 通过用户、密码和端口的组合生成SshLauncher对象切片
 func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers []SshLauncher) {
 	for com := range combinations {
-		launchers = append(launchers, SshLauncher{SshTarget: target.SshTarget{
+		launchers = append(launchers, SshLauncher{SshConnector{
 			Ip:       com[0].(string),
 			Port:     com[1].(string),
 			User:     com[2].(string),
@@ -37,53 +30,8 @@ func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers [
 	return
 }
 
-// LoadConfig 构造连接配置
-func (h *SshLauncher) LoadConfig() (config *ssh.ClientConfig) {
-	config = &ssh.ClientConfig{
-		User: h.User,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(h.Password),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		ClientVersion:   "",
-		Timeout:         sshClientTimeout,
-	}
-	return
-}
-
-// CreateConnection 创建连接
-func (h *SshLauncher) CreateConnection() (sshClient *ssh.Client, err error) {
-	addr := h.Ip + ":" + h.Port
-	config := h.LoadConfig()
-
-	sshClient, err = ssh.Dial(sshProtocol, addr, config)
-	if err != nil {
-		log.Warnf("Unable to connect: %s@%s, Password:%s Cause: %s",
-			h.User, addr, h.Password, err.Error())
-	}
-	return
-}
-
-// CloseConnection 关闭连接
-func (h *SshLauncher) CloseConnection(sshClient *ssh.Client) {
-	err := sshClient.Close()
-	if err != nil {
-		log.Errorln("Unable to close connection: ", err.Error())
-	}
-}
-
-// TryToConnect 尝试创建连接
-func (h *SshLauncher) TryToConnect() (err error) {
-	sshClient, err := h.CreateConnection()
-	if err != nil {
-		return
-	}
-	defer h.CloseConnection(sshClient)
-	return
-}
-
-// DialServer 连接服务器
-func (h *SshLauncher) DialServer() (res bool) {
+// dialServer 连接服务器
+func (h *SshLauncher) dialServer() (res bool) {
 	res = false
 	sshClient, err := h.CreateConnection()
 	if err == nil {
@@ -93,7 +41,7 @@ func (h *SshLauncher) DialServer() (res bool) {
 		log.Infoln("Ssh Server Version:", string(sshClient.ServerVersion()))
 		log.Infof("Ssh Client Version: %s\n\n", string(sshClient.ClientVersion()))
 		res = true
-		h.CreateTerminal(sshClient)
+		h.createTerminal(sshClient)
 	} else {
 		return
 	}
@@ -101,17 +49,17 @@ func (h *SshLauncher) DialServer() (res bool) {
 	return
 }
 
-// CreateTerminal 创建session和终端
-func (h *SshLauncher) CreateTerminal(conn *ssh.Client) {
+// createTerminal 创建session和终端
+func (h *SshLauncher) createTerminal(conn *ssh.Client) {
 	// 创建session
 	session, err := conn.NewSession()
 	if err != nil {
-		log.Fatalln("Failed to create ssh session: ", err.Error())
+		log.Fatalln(err.Error())
 	}
 	defer func(conn *ssh.Client) {
 		if err := session.Close(); err != nil {
 			if err.Error() != "EOF" {
-				log.Fatalln("Failed to close ssh session: ", err.Error())
+				log.Fatalln(err.Error())
 			}
 		}
 	}(conn)
@@ -130,7 +78,7 @@ func (h *SshLauncher) CreateTerminal(conn *ssh.Client) {
 	}
 	defer func(fd int, oldState *terminal.State) {
 		if err := terminal.Restore(fd, oldState); err != nil {
-			log.Fatalln("Failed to restore terminal: ", err.Error())
+			log.Fatalln(err.Error())
 		}
 	}(fd, oldState)
 
@@ -140,7 +88,7 @@ func (h *SshLauncher) CreateTerminal(conn *ssh.Client) {
 	session.Stderr = os.Stderr
 
 	// 打开伪终端
-	err = session.RequestPty("xterm", termHeight, termWidth, modes)
+	err = session.RequestPty(terminalTerm, termHeight, termWidth, modes)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
