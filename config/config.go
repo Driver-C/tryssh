@@ -1,11 +1,12 @@
 package config
 
 import (
+	"github.com/schwarmco/go-cartesian-product"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
-	"tryssh/target"
+	"tryssh/launcher"
 	"tryssh/utils"
 )
 
@@ -31,9 +32,9 @@ type ServerListConfig struct {
 	Password string `yaml:"password"`
 }
 
-// GetTargetFromConfig 通过ServerListConfig获取SshTarget
-func GetTargetFromConfig(conf *ServerListConfig) *target.SshTarget {
-	return &target.SshTarget{
+// GetSshConnectorFromConfig 通过ServerListConfig获取SshConnector
+func GetSshConnectorFromConfig(conf *ServerListConfig) *launcher.SshConnector {
+	return &launcher.SshConnector{
 		Ip:       conf.Ip,
 		Port:     conf.Port,
 		User:     conf.User,
@@ -41,8 +42,8 @@ func GetTargetFromConfig(conf *ServerListConfig) *target.SshTarget {
 	}
 }
 
-// GetConfigFromTarget 通过SshTarget获取ServerListConfig
-func GetConfigFromTarget(tgt *target.SshTarget) *ServerListConfig {
+// GetConfigFromSshConnector 通过SshConnector获取ServerListConfig
+func GetConfigFromSshConnector(tgt *launcher.SshConnector) *ServerListConfig {
 	return &ServerListConfig{
 		Ip:       tgt.Ip,
 		Port:     tgt.Port,
@@ -117,5 +118,16 @@ func AddServerCache(server *ServerListConfig, conf *MainConfig) (writeRes bool) 
 func DeleteServerCache(oldIndex int, conf *MainConfig) (writeRes bool) {
 	conf.ServerLists = append(conf.ServerLists[0:oldIndex], conf.ServerLists[oldIndex+1:]...)
 	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
+	return
+}
+
+// GenerateCombination 生成所有端口、用户、密码组合的对象
+func GenerateCombination(ip string, conf *MainConfig) (combinations chan []interface{}) {
+	ips := []interface{}{ip}
+	ports := utils.InterfaceSlice(conf.Main.Ports)
+	users := utils.InterfaceSlice(conf.Main.Users)
+	passwords := utils.InterfaceSlice(conf.Main.Passwords)
+	// 生成组合 参数顺序不可变
+	combinations = cartesian.Iter(ips, ports, users, passwords)
 	return
 }
