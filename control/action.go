@@ -40,9 +40,18 @@ func (a *Action) TryLogin() {
 		a.tryLoginWithCache(targetIp, targetServer, cacheIndex)
 	} else {
 		log.Warnf("The cache for %s could not be found. The password will be guessed.\n\n", targetIp)
-		a.tryLoginWithoutCache(targetIp)
+		a.tryWithoutCache(targetIp)
 	}
 	log.Fatalln("There is no password combination that can log in successfully\n")
+}
+
+// tryWithoutCache 根据命令行参数执行猜密码登陆/传文件
+func (a *Action) tryWithoutCache(targetIp string) {
+	if a.Flags.CopyFile {
+		a.tryCopyFileWithoutCache(targetIp)
+	} else {
+		a.tryLoginWithoutCache(targetIp)
+	}
 }
 
 // tryLoginWithCache 尝试用缓存连接，判断缓存连接是否成功，不成功则重新猜密码
@@ -54,11 +63,7 @@ func (a *Action) tryLoginWithCache(targetIp string, targetServer *config.ServerL
 		log.Errorln("Failed to log in with cached information. The password will be guessed again\n\n")
 		if config.DeleteServerCache(cacheIndex, a.Configuration) {
 			log.Infoln("Delete server cache successful.\n")
-			if a.Flags.CopyFile {
-				a.tryCopyFileWithoutCache(targetIp)
-			} else {
-				a.tryLoginWithoutCache(targetIp)
-			}
+			a.tryWithoutCache(targetIp)
 		}
 	}
 }

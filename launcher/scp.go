@@ -75,17 +75,6 @@ func (c *ScpLauncher) upload(local, remote string) bool {
 	localPath := strings.Split(local, "/")
 	localFileName := localPath[len(localPath)-1]
 	remoteFileName := localFileName
-	// 打开远程文件
-	remoteFile, err := sftpClient.OpenFile(sftp.Join(remote, remoteFileName), os.O_CREATE|os.O_RDWR|os.O_EXCL)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	defer func(remoteFile *sftp.File) {
-		err := remoteFile.Close()
-		if err != nil {
-			log.Errorln(err.Error())
-		}
-	}(remoteFile)
 	// 打开本地文件
 	localFile, err := os.Open(local)
 	if err != nil {
@@ -97,12 +86,24 @@ func (c *ScpLauncher) upload(local, remote string) bool {
 			log.Errorln(err.Error())
 		}
 	}(localFile)
+	// 打开远程文件
+	remoteFile, err := sftpClient.OpenFile(sftp.Join(remote, remoteFileName), os.O_CREATE|os.O_RDWR|os.O_EXCL)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer func(remoteFile *sftp.File) {
+		err := remoteFile.Close()
+		if err != nil {
+			log.Errorln(err.Error())
+		}
+	}(remoteFile)
 	// 上传
 	transSize, err := io.Copy(remoteFile, localFile)
 	if err != nil {
 		log.Fatalln(err.Error())
 	} else {
-		log.Infof("File: %s uploaded successfully. Transmission size: %d Bytes.", localFileName, transSize)
+		log.Infof("File: %s uploaded successfully. Transmission size: %s.",
+			remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	}
 	return true
 }
@@ -117,17 +118,6 @@ func (c *ScpLauncher) download(local, remote string) bool {
 	remotePath := strings.Split(remote, "/")
 	remoteFileName := remotePath[len(remotePath)-1]
 	localFileName := remoteFileName
-	// 打开本地文件
-	localFile, err := os.OpenFile(sftp.Join(local, localFileName), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	defer func(localFile *os.File) {
-		err := localFile.Close()
-		if err != nil {
-			log.Errorln(err.Error())
-		}
-	}(localFile)
 	// 打开远程文件
 	remoteFile, err := sftpClient.Open(remote)
 	if err != nil {
@@ -139,6 +129,17 @@ func (c *ScpLauncher) download(local, remote string) bool {
 			log.Errorln(err.Error())
 		}
 	}(remoteFile)
+	// 打开本地文件
+	localFile, err := os.OpenFile(sftp.Join(local, localFileName), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer func(localFile *os.File) {
+		err := localFile.Close()
+		if err != nil {
+			log.Errorln(err.Error())
+		}
+	}(localFile)
 	// 下载
 	transSize, err := io.Copy(localFile, remoteFile)
 	if err != nil {
