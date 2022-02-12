@@ -10,7 +10,7 @@ import (
 type ArgsNumber int
 
 const (
-	VERSION                       = "1.1.0"
+	VERSION                       = "1.1.1"
 	loginArgsNumber    ArgsNumber = 1
 	copyFileArgsNumber ArgsNumber = 2
 )
