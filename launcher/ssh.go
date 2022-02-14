@@ -38,6 +38,7 @@ func (h *SshLauncher) dialServer() (res bool) {
 		log.Infoln("[ LOGIN SUCCESSFUL ]\n")
 		log.Infoln("User:", sshClient.User())
 		log.Infoln("Password:", h.Password)
+		log.Infoln("Port:", h.Port)
 		log.Infoln("Ssh Server Version:", string(sshClient.ServerVersion()))
 		log.Infof("Ssh Client Version: %s\n\n", string(sshClient.ClientVersion()))
 		res = true
@@ -102,6 +103,6 @@ func (h *SshLauncher) createTerminal(conn *ssh.Client) {
 	// 等待远程命令结束或远程shell退出
 	err = session.Wait()
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Warnln(err.Error())
 	}
 }
