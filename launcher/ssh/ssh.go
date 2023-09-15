@@ -1,26 +1,24 @@
-package launcher
+package ssh
 
 import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
+	"tryssh/launcher"
 	"tryssh/utils"
 )
 
-// SshLauncher ssh终端连接器
-type SshLauncher struct {
-	SshConnector
+type Launcher struct {
+	launcher.SshConnector
 }
 
-// Launch 执行
-func (h *SshLauncher) Launch() bool {
+func (h *Launcher) Launch() bool {
 	return h.dialServer()
 }
 
-// NewSshLaunchersByCombinations 通过用户、密码和端口的组合生成SshLauncher对象切片
-func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers []SshLauncher) {
+func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers []Launcher) {
 	for com := range combinations {
-		launchers = append(launchers, SshLauncher{SshConnector{
+		launchers = append(launchers, Launcher{launcher.SshConnector{
 			Ip:       com[0].(string),
 			Port:     com[1].(string),
 			User:     com[2].(string),
@@ -30,8 +28,7 @@ func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers [
 	return
 }
 
-// dialServer 连接服务器
-func (h *SshLauncher) dialServer() (res bool) {
+func (h *Launcher) dialServer() (res bool) {
 	res = false
 	sshClient, err := h.CreateConnection()
 	if err == nil {
@@ -50,9 +47,7 @@ func (h *SshLauncher) dialServer() (res bool) {
 	return
 }
 
-// createTerminal 创建session和终端
-func (h *SshLauncher) createTerminal(conn *ssh.Client) {
-	// 创建session
+func (h *Launcher) createTerminal(conn *ssh.Client) {
 	session, err := conn.NewSession()
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
@@ -65,11 +60,10 @@ func (h *SshLauncher) createTerminal(conn *ssh.Client) {
 		}
 	}(conn)
 
-	// 配置终端
 	modes := ssh.TerminalModes{
-		ssh.ECHO:          1,     // 打开回显 0关 1开
-		ssh.TTY_OP_ISPEED: 14400, // 输入速率 14.4k baud
-		ssh.TTY_OP_OSPEED: 14400, // 输出速率 14.4k baud
+		ssh.ECHO:          1,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
 		ssh.VSTATUS:       1,
 	}
 	fd := int(os.Stdin.Fd())
@@ -88,19 +82,16 @@ func (h *SshLauncher) createTerminal(conn *ssh.Client) {
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
-	// 打开伪终端
-	err = session.RequestPty(terminalTerm, termHeight, termWidth, modes)
+	err = session.RequestPty(launcher.TerminalTerm, termHeight, termWidth, modes)
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	}
 
-	// 启动一个远程shell
 	err = session.Shell()
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	}
 
-	// 等待远程命令结束或远程shell退出
 	err = session.Wait()
 	if err != nil {
 		utils.Logger.Warnln(err.Error())
