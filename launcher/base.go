@@ -8,8 +8,8 @@ import (
 
 const (
 	sshProtocol      string = "tcp"
-	sshClientTimeout        = 1000 * time.Millisecond
-	terminalTerm            = "xterm"
+	sshClientTimeout        = 2 * time.Second
+	TerminalTerm            = "xterm"
 )
 
 // Connector 连接器接口

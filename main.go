@@ -2,8 +2,6 @@ package main
 
 import (
 	"tryssh/cmd"
-	"tryssh/config"
-	"tryssh/control"
 	"tryssh/utils"
 )
 
@@ -14,16 +12,8 @@ func main() {
 		}
 	}()
 
-	// 生成命令参数结构
-	flags := cmd.NewFlagsParse()
-
-	// 加载配置文件
-	configuration := config.LoadConfig()
-
-	// Start
-	action := control.Action{
-		Flags:         flags,
-		Configuration: configuration,
+	rootCmd := cmd.NewTrysshCommand()
+	if err := rootCmd.Execute(); err != nil {
+		utils.Logger.Fatalln(err)
 	}
-	action.TryLogin()
 }
