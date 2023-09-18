@@ -69,7 +69,7 @@ func (c *Launcher) upload(local, remote string) bool {
 	localPath := strings.Split(local, "/")
 	localFileName := localPath[len(localPath)-1]
 	remoteFileName := localFileName
-	// 打开本地文件
+
 	localFile, err := os.Open(local)
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())

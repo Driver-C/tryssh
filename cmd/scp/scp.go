@@ -16,8 +16,8 @@ func NewScpCommand() *cobra.Command {
 	scpCmd := &cobra.Command{
 		Use:     "scp <source> <destination>",
 		Args:    cobra.ExactArgs(2),
-		Short:   "Copy file to the server through SSH protocol",
-		Long:    "Copy file to the server through SSH protocol",
+		Short:   "Upload/Download file to/from the server through SSH protocol",
+		Long:    "Upload/Download file to/from the server through SSH protocol",
 		Example: scpExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			source := args[0]
