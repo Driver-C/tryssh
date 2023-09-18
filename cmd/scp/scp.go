@@ -22,10 +22,14 @@ func NewScpCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			source := args[0]
 			destination := args[1]
+			user, _ := cmd.Flags().GetString("user")
 			configuration := config.LoadConfig()
 			scpControl := scp.NewScpController(source, destination, configuration)
-			scpControl.TryCopy()
+			scpControl.TryCopy(user)
 		},
 	}
+	scpCmd.Flags().StringP(
+		"user", "u", "", "Specify a username to attempt to login to the server,\n"+
+			"if the specified username does not exist, try logging in using that username")
 	return scpCmd
 }

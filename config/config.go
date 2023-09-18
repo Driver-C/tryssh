@@ -3,7 +3,6 @@ package config
 import (
 	"github.com/schwarmco/go-cartesian-product"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
 	"os"
 	"tryssh/launcher"
 	"tryssh/utils"
@@ -13,7 +12,7 @@ const (
 	configPath = "/usr/local/etc/tryssh.yaml"
 )
 
-// MainConfig 主配置文件
+// MainConfig Main config
 type MainConfig struct {
 	Main struct {
 		Ports     []string `yaml:"ports,flow"`
@@ -23,7 +22,7 @@ type MainConfig struct {
 	ServerLists []ServerListConfig `yaml:"serverList"`
 }
 
-// ServerListConfig 服务器信息缓存列表
+// ServerListConfig Server information cache list
 type ServerListConfig struct {
 	Ip       string `yaml:"ip"`
 	Port     string `yaml:"port"`
@@ -31,7 +30,7 @@ type ServerListConfig struct {
 	Password string `yaml:"password"`
 }
 
-// GetSshConnectorFromConfig 通过ServerListConfig获取SshConnector
+// GetSshConnectorFromConfig Get SshConnector by ServerListConfig
 func GetSshConnectorFromConfig(conf *ServerListConfig) *launcher.SshConnector {
 	return &launcher.SshConnector{
 		Ip:       conf.Ip,
@@ -41,7 +40,7 @@ func GetSshConnectorFromConfig(conf *ServerListConfig) *launcher.SshConnector {
 	}
 }
 
-// GetConfigFromSshConnector 通过SshConnector获取ServerListConfig
+// GetConfigFromSshConnector Get ServerListConfig by SshConnector
 func GetConfigFromSshConnector(tgt *launcher.SshConnector) *ServerListConfig {
 	return &ServerListConfig{
 		Ip:       tgt.Ip,
@@ -51,7 +50,6 @@ func GetConfigFromSshConnector(tgt *launcher.SshConnector) *ServerListConfig {
 	}
 }
 
-// checkFileIsExist 检查文件是否存在
 func checkFileIsExist(filename string) (exist bool) {
 	exist = true
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -60,7 +58,7 @@ func checkFileIsExist(filename string) (exist bool) {
 	return
 }
 
-// generateConfig 生成初始配置文件（直接覆盖）
+// generateConfig Generate initial configuration file (force overwrite)
 func generateConfig() {
 	utils.Logger.Infoln("Generating configuration file.\n")
 	_ = utils.FileYamlMarshalAndWrite(configPath, &MainConfig{})
@@ -70,12 +68,11 @@ func generateConfig() {
 	os.Exit(0)
 }
 
-// LoadConfig 加载配置文件
 func LoadConfig() (c *MainConfig) {
 	c = new(MainConfig)
 
 	if checkFileIsExist(configPath) {
-		conf, err := ioutil.ReadFile(configPath)
+		conf, err := os.ReadFile(configPath)
 		if err != nil {
 			utils.Logger.Fatalln("Configuration file load failed: ", err)
 		}
@@ -96,37 +93,44 @@ func LoadConfig() (c *MainConfig) {
 	return
 }
 
-// SelectServerCache 在serverLists配置中查询是否存在缓存
-func SelectServerCache(ip string, conf *MainConfig) (*ServerListConfig, int, bool) {
+// SelectServerCache Search cache from server list
+func SelectServerCache(user string, ip string, conf *MainConfig) (*ServerListConfig, int, bool) {
 	for index, server := range conf.ServerLists {
 		if server.Ip == ip {
-			return &server, index, true
+			if user != "" {
+				if server.User == user {
+					return &server, index, true
+				}
+			} else {
+				return &server, index, true
+			}
 		}
 	}
 	return nil, 0, false
 }
 
-// AddServerCache 新增缓存
 func AddServerCache(server *ServerListConfig, conf *MainConfig) (writeRes bool) {
 	conf.ServerLists = append(conf.ServerLists, *server)
 	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
 	return
 }
 
-// DeleteServerCache 删除缓存
 func DeleteServerCache(oldIndex int, conf *MainConfig) (writeRes bool) {
 	conf.ServerLists = append(conf.ServerLists[0:oldIndex], conf.ServerLists[oldIndex+1:]...)
 	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
 	return
 }
 
-// GenerateCombination 生成所有端口、用户、密码组合的对象
-func GenerateCombination(ip string, conf *MainConfig) (combinations chan []interface{}) {
+// GenerateCombination Generate objects for all port, user, and password combinations
+func GenerateCombination(ip string, user string, conf *MainConfig) (combinations chan []interface{}) {
 	ips := []interface{}{ip}
+	users := []interface{}{user}
 	ports := utils.InterfaceSlice(conf.Main.Ports)
-	users := utils.InterfaceSlice(conf.Main.Users)
+	if user == "" {
+		users = utils.InterfaceSlice(conf.Main.Users)
+	}
 	passwords := utils.InterfaceSlice(conf.Main.Passwords)
-	// 生成组合 参数顺序不可变
+	// Generate combinations with immutable parameter order
 	combinations = cartesian.Iter(ips, ports, users, passwords)
 	return
 }
