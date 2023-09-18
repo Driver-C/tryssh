@@ -12,8 +12,11 @@ type Controller struct {
 	source        string
 	destination   string
 	configuration *config.MainConfig
+	cacheIsFound  bool
+	cacheIndex    int
 }
 
+// TryCopy Functional entrance
 func (cc *Controller) TryCopy(user string) {
 	var destIp string
 	if strings.Contains(cc.source, ":") {
@@ -21,11 +24,12 @@ func (cc *Controller) TryCopy(user string) {
 	} else if strings.Contains(cc.destination, ":") {
 		destIp = strings.Split(cc.destination, ":")[0]
 	}
-	targetServer, cacheIndex, isFound := config.SelectServerCache(user, destIp, cc.configuration)
+	var targetServer *config.ServerListConfig
+	targetServer, cc.cacheIndex, cc.cacheIsFound = config.SelectServerCache(user, destIp, cc.configuration)
 
-	if isFound {
+	if cc.cacheIsFound {
 		utils.Logger.Infof("The cache for %s is found, which will be used to try.\n", destIp)
-		cc.tryCopyWithCache(destIp, user, targetServer, cacheIndex)
+		cc.tryCopyWithCache(destIp, user, targetServer)
 	} else {
 		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", destIp)
 		cc.tryCopyWithoutCache(destIp, user)
@@ -33,8 +37,7 @@ func (cc *Controller) TryCopy(user string) {
 	utils.Logger.Fatalln("There is no password combination that can log in successfully\n")
 }
 
-func (cc *Controller) tryCopyWithCache(destIp string, user string,
-	targetServer *config.ServerListConfig, cacheIndex int) {
+func (cc *Controller) tryCopyWithCache(destIp string, user string, targetServer *config.ServerListConfig) {
 	lan := &scp.Launcher{
 		SshConnector: *config.GetSshConnectorFromConfig(targetServer),
 		Src:          cc.source,
@@ -44,10 +47,7 @@ func (cc *Controller) tryCopyWithCache(destIp string, user string,
 		os.Exit(0)
 	} else {
 		utils.Logger.Errorln("Failed to log in with cached information. Start trying to login again.\n\n")
-		if config.DeleteServerCache(cacheIndex, cc.configuration) {
-			utils.Logger.Infoln("Delete server cache successful.\n")
-			cc.tryCopyWithoutCache(destIp, user)
-		}
+		cc.tryCopyWithoutCache(destIp, user)
 	}
 }
 
@@ -57,11 +57,18 @@ func (cc *Controller) tryCopyWithoutCache(destIp string, user string) {
 	for _, lan := range launchers {
 		if err := lan.TryToConnect(); err == nil {
 			utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
-			if config.AddServerCache(config.GetConfigFromSshConnector(&lan.SshConnector), cc.configuration) {
-				utils.Logger.Infoln("Cache updated.\n\n")
+			// Determine if the login attempt was successful after the old cache login failed.
+			// If so, delete the old cache information that cannot be logged in after the login attempt is successful
+			if cc.cacheIsFound {
+				utils.Logger.Infoln("The old cache will be deleted.\n")
+				config.DeleteServerCache(cc.cacheIndex, cc.configuration)
+			}
+			newServerCache := config.GetConfigFromSshConnector(&lan.SshConnector)
+			if config.AddServerCache(newServerCache, cc.configuration) {
+				utils.Logger.Infoln("Cache added.\n\n")
 				lan.Launch()
 			} else {
-				utils.Logger.Errorln("Cache update failed.\n\n")
+				utils.Logger.Errorln("Cache added failed.\n\n")
 			}
 			os.Exit(0)
 		}
