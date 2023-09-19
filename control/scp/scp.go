@@ -14,30 +14,45 @@ type Controller struct {
 	configuration *config.MainConfig
 	cacheIsFound  bool
 	cacheIndex    int
+	destIp        string
 }
 
 // TryCopy Functional entrance
 func (cc *Controller) TryCopy(user string) {
-	var destIp string
 	if strings.Contains(cc.source, ":") {
-		destIp = strings.Split(cc.source, ":")[0]
+		cc.destIp = strings.Split(cc.source, ":")[0]
+		remotePath := strings.Split(cc.source, ":")[1]
+		// Obtain the real address based on the alias
+		cc.searchAliasExistsOrNot()
+		// Reassemble remote server address and file path
+		cc.source = strings.Join([]string{cc.destIp, remotePath}, ":")
 	} else if strings.Contains(cc.destination, ":") {
-		destIp = strings.Split(cc.destination, ":")[0]
+		cc.destIp = strings.Split(cc.destination, ":")[0]
+		remotePath := strings.Split(cc.destination, ":")[1]
+		// Obtain the real address based on the alias
+		cc.searchAliasExistsOrNot()
+		// Reassemble remote server address and file path
+		cc.destination = strings.Join([]string{cc.destIp, remotePath}, ":")
+	} else {
+		return
 	}
+	// Obtain the real address based on the alias
+	cc.searchAliasExistsOrNot()
+	// Reassemble remote server address and file path
 	var targetServer *config.ServerListConfig
-	targetServer, cc.cacheIndex, cc.cacheIsFound = config.SelectServerCache(user, destIp, cc.configuration)
+	targetServer, cc.cacheIndex, cc.cacheIsFound = config.SelectServerCache(user, cc.destIp, cc.configuration)
 
 	if cc.cacheIsFound {
-		utils.Logger.Infof("The cache for %s is found, which will be used to try.\n", destIp)
-		cc.tryCopyWithCache(destIp, user, targetServer)
+		utils.Logger.Infof("The cache for %s is found, which will be used to try.\n", cc.destIp)
+		cc.tryCopyWithCache(user, targetServer)
 	} else {
-		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", destIp)
-		cc.tryCopyWithoutCache(destIp, user)
+		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", cc.destIp)
+		cc.tryCopyWithoutCache(user)
 	}
 	utils.Logger.Fatalln("There is no password combination that can log in successfully\n")
 }
 
-func (cc *Controller) tryCopyWithCache(destIp string, user string, targetServer *config.ServerListConfig) {
+func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerListConfig) {
 	lan := &scp.Launcher{
 		SshConnector: *config.GetSshConnectorFromConfig(targetServer),
 		Src:          cc.source,
@@ -47,12 +62,12 @@ func (cc *Controller) tryCopyWithCache(destIp string, user string, targetServer 
 		os.Exit(0)
 	} else {
 		utils.Logger.Errorln("Failed to log in with cached information. Start trying to login again.\n\n")
-		cc.tryCopyWithoutCache(destIp, user)
+		cc.tryCopyWithoutCache(user)
 	}
 }
 
-func (cc *Controller) tryCopyWithoutCache(destIp string, user string) {
-	combinations := config.GenerateCombination(destIp, user, cc.configuration)
+func (cc *Controller) tryCopyWithoutCache(user string) {
+	combinations := config.GenerateCombination(cc.destIp, user, cc.configuration)
 	launchers := scp.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination)
 	for _, lan := range launchers {
 		if err := lan.TryToConnect(); err == nil {
@@ -71,6 +86,14 @@ func (cc *Controller) tryCopyWithoutCache(destIp string, user string) {
 				utils.Logger.Errorln("Cache added failed.\n\n")
 			}
 			os.Exit(0)
+		}
+	}
+}
+
+func (cc *Controller) searchAliasExistsOrNot() {
+	for _, server := range cc.configuration.ServerLists {
+		if server.Alias == cc.destIp {
+			cc.destIp = server.Ip
 		}
 	}
 }

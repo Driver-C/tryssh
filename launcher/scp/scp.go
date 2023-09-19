@@ -96,7 +96,7 @@ func (c *Launcher) upload(local, remote string) bool {
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	} else {
-		utils.Logger.Infof("File: %s uploaded successfully. Transmission size: %s.",
+		utils.Logger.Infof("File: %s uploaded successfully. Transmission size: %s.\n",
 			remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	}
 	return true
@@ -138,7 +138,7 @@ func (c *Launcher) download(local, remote string) bool {
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	} else {
-		utils.Logger.Infof("File: %s downloaded successfully. Transmission size: %s.",
+		utils.Logger.Infof("File: %s downloaded successfully. Transmission size: %s.\n",
 			remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	}
 	return true

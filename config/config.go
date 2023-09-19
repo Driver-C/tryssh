@@ -28,6 +28,7 @@ type ServerListConfig struct {
 	Port     string `yaml:"port"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
+	Alias    string `yaml:"alias"`
 }
 
 // GetSshConnectorFromConfig Get SshConnector by ServerListConfig
@@ -115,8 +116,13 @@ func AddServerCache(server *ServerListConfig, conf *MainConfig) (writeRes bool) 
 	return
 }
 
-func DeleteServerCache(oldIndex int, conf *MainConfig) (writeRes bool) {
-	conf.ServerLists = append(conf.ServerLists[0:oldIndex], conf.ServerLists[oldIndex+1:]...)
+func DeleteServerCache(cacheIndex int, conf *MainConfig) (writeRes bool) {
+	conf.ServerLists = append(conf.ServerLists[0:cacheIndex], conf.ServerLists[cacheIndex+1:]...)
+	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
+	return
+}
+
+func UpdateConfig(conf *MainConfig) (writeRes bool) {
 	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
 	return
 }

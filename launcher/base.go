@@ -54,7 +54,7 @@ func (sc *SshConnector) CreateConnection() (sshClient *ssh.Client, err error) {
 
 	sshClient, err = ssh.Dial(sshProtocol, addr, config)
 	if err != nil {
-		utils.Logger.Warnf("Unable to connect: %s@%s, Password:%s Cause: %s",
+		utils.Logger.Warnf("Unable to connect: %s@%s, Password:%s Cause: %s\n",
 			sc.User, addr, sc.Password, err.Error())
 	}
 	return

@@ -16,6 +16,8 @@ type Controller struct {
 
 // TryLogin Functional entrance
 func (sc *Controller) TryLogin(user string) {
+	// Obtain the real address based on the alias
+	sc.searchAliasExistsOrNot()
 	var targetServer *config.ServerListConfig
 	targetServer, sc.cacheIndex, sc.cacheIsFound = config.SelectServerCache(user, sc.targetIp, sc.configuration)
 	if user != "" {
@@ -61,6 +63,14 @@ func (sc *Controller) tryLoginWithoutCache(user string) {
 				utils.Logger.Errorln("Cache added failed.\n\n")
 			}
 			os.Exit(0)
+		}
+	}
+}
+
+func (sc *Controller) searchAliasExistsOrNot() {
+	for _, server := range sc.configuration.ServerLists {
+		if server.Alias == sc.targetIp {
+			sc.targetIp = server.Ip
 		}
 	}
 }
