@@ -110,18 +110,6 @@ func SelectServerCache(user string, ip string, conf *MainConfig) (*ServerListCon
 	return nil, 0, false
 }
 
-func AddServerCache(server *ServerListConfig, conf *MainConfig) (writeRes bool) {
-	conf.ServerLists = append(conf.ServerLists, *server)
-	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
-	return
-}
-
-func DeleteServerCache(cacheIndex int, conf *MainConfig) (writeRes bool) {
-	conf.ServerLists = append(conf.ServerLists[0:cacheIndex], conf.ServerLists[cacheIndex+1:]...)
-	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
-	return
-}
-
 func UpdateConfig(conf *MainConfig) (writeRes bool) {
 	writeRes = utils.FileYamlMarshalAndWrite(configPath, conf)
 	return

@@ -4,6 +4,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
+	"time"
 	"tryssh/launcher"
 	"tryssh/utils"
 )
@@ -16,13 +17,15 @@ func (h *Launcher) Launch() bool {
 	return h.dialServer()
 }
 
-func NewSshLaunchersByCombinations(combinations chan []interface{}) (launchers []Launcher) {
+func NewSshLaunchersByCombinations(combinations chan []interface{},
+	sshTimeout time.Duration) (launchers []*Launcher) {
 	for com := range combinations {
-		launchers = append(launchers, Launcher{launcher.SshConnector{
-			Ip:       com[0].(string),
-			Port:     com[1].(string),
-			User:     com[2].(string),
-			Password: com[3].(string),
+		launchers = append(launchers, &Launcher{launcher.SshConnector{
+			Ip:         com[0].(string),
+			Port:       com[1].(string),
+			User:       com[2].(string),
+			Password:   com[3].(string),
+			SshTimeout: sshTimeout,
 		}})
 	}
 	return

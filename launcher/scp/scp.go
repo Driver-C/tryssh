@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 	"tryssh/launcher"
 	"tryssh/utils"
 )
@@ -25,14 +26,16 @@ func (c *Launcher) Launch() bool {
 	return false
 }
 
-func NewScpLaunchersByCombinations(combinations chan []interface{}, src string, dest string) (launchers []Launcher) {
+func NewScpLaunchersByCombinations(combinations chan []interface{}, src string, dest string,
+	sshTimeout time.Duration) (launchers []*Launcher) {
 	for com := range combinations {
-		launchers = append(launchers, Launcher{
+		launchers = append(launchers, &Launcher{
 			SshConnector: launcher.SshConnector{
-				Ip:       com[0].(string),
-				Port:     com[1].(string),
-				User:     com[2].(string),
-				Password: com[3].(string),
+				Ip:         com[0].(string),
+				Port:       com[1].(string),
+				User:       com[2].(string),
+				Password:   com[3].(string),
+				SshTimeout: sshTimeout,
 			},
 			Src:  src,
 			Dest: dest,
