@@ -1,8 +1,11 @@
 package scp
 
 import (
+	"context"
 	"os"
 	"strings"
+	"sync"
+	"time"
 	"tryssh/config"
 	"tryssh/launcher/scp"
 	"tryssh/utils"
@@ -15,10 +18,16 @@ type Controller struct {
 	cacheIsFound  bool
 	cacheIndex    int
 	destIp        string
+	concurrency   int
+	sshTimeout    time.Duration
 }
 
 // TryCopy Functional entrance
-func (cc *Controller) TryCopy(user string) {
+func (cc *Controller) TryCopy(user string, concurrency int, sshTimeout time.Duration) {
+	// Set timeout
+	cc.sshTimeout = sshTimeout
+	// Set concurrency
+	cc.concurrency = concurrency
 	if strings.Contains(cc.source, ":") {
 		cc.destIp = strings.Split(cc.source, ":")[0]
 		remotePath := strings.Split(cc.source, ":")[1]
@@ -68,25 +77,26 @@ func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerL
 
 func (cc *Controller) tryCopyWithoutCache(user string) {
 	combinations := config.GenerateCombination(cc.destIp, user, cc.configuration)
-	launchers := scp.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination)
-	for _, lan := range launchers {
-		if err := lan.TryToConnect(); err == nil {
-			utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
-			// Determine if the login attempt was successful after the old cache login failed.
-			// If so, delete the old cache information that cannot be logged in after the login attempt is successful
-			if cc.cacheIsFound {
-				utils.Logger.Infoln("The old cache will be deleted.\n")
-				config.DeleteServerCache(cc.cacheIndex, cc.configuration)
-			}
-			newServerCache := config.GetConfigFromSshConnector(&lan.SshConnector)
-			if config.AddServerCache(newServerCache, cc.configuration) {
-				utils.Logger.Infoln("Cache added.\n\n")
-				lan.Launch()
-			} else {
-				utils.Logger.Errorln("Cache added failed.\n\n")
-			}
-			os.Exit(0)
+	launchers := scp.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination, cc.sshTimeout)
+	hitLaunchers := concurrencyTryToConnect(cc.concurrency, launchers)
+	if hitLaunchers != nil {
+		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
+		// Determine if the login attempt was successful after the old cache login failed.
+		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
+		if cc.cacheIsFound {
+			utils.Logger.Infoln("The old cache will be deleted.\n")
+			cc.configuration.ServerLists = append(
+				cc.configuration.ServerLists[:cc.cacheIndex], cc.configuration.ServerLists[cc.cacheIndex+1:]...)
 		}
+		newServerCache := config.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
+		cc.configuration.ServerLists = append(cc.configuration.ServerLists, *newServerCache)
+		if config.UpdateConfig(cc.configuration) {
+			utils.Logger.Infoln("Cache added.\n\n")
+			hitLaunchers[0].Launch()
+		} else {
+			utils.Logger.Errorln("Cache added failed.\n\n")
+		}
+		os.Exit(0)
 	}
 }
 
@@ -96,6 +106,53 @@ func (cc *Controller) searchAliasExistsOrNot() {
 			cc.destIp = server.Ip
 		}
 	}
+}
+
+func concurrencyTryToConnect(concurrency int, launchers []*scp.Launcher) []*scp.Launcher {
+	var hitLaunchers []*scp.Launcher
+	var mutex sync.Mutex
+	launchersChan := make(chan *scp.Launcher)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	// Producer
+	go func(ctx context.Context, launchersChan chan<- *scp.Launcher, launchers []*scp.Launcher) {
+		for _, launcherP := range launchers {
+			select {
+			case <-ctx.Done():
+				break
+			default:
+				launchersChan <- launcherP
+			}
+		}
+		close(launchersChan)
+	}(ctx, launchersChan, launchers)
+	// Consumer
+	var wg sync.WaitGroup
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func(ctx context.Context, cancelFunc context.CancelFunc,
+			launchersChan <-chan *scp.Launcher, cwg *sync.WaitGroup, mutex *sync.Mutex) {
+			defer cwg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case launcherP, ok := <-launchersChan:
+					if !ok {
+						return
+					}
+					if err := launcherP.TryToConnect(); err == nil {
+						mutex.Lock()
+						hitLaunchers = append(hitLaunchers, launcherP)
+						mutex.Unlock()
+						cancelFunc()
+					}
+				}
+			}
+		}(ctx, cancelFunc, launchersChan, &wg, &mutex)
+	}
+	wg.Wait()
+	cancelFunc()
+	return hitLaunchers
 }
 
 func NewScpController(source string, destination string, configuration *config.MainConfig) *Controller {

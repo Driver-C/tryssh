@@ -12,7 +12,6 @@ const (
 	TerminalTerm            = "xterm"
 )
 
-// Connector 连接器接口
 type Connector interface {
 	Launch() bool
 	CreateConnection() (sshClient *ssh.Client, err error)
@@ -20,21 +19,23 @@ type Connector interface {
 	TryToConnect() (err error)
 }
 
-// SshConnector ssh连接器
 type SshConnector struct {
-	Ip       string
-	Port     string
-	User     string
-	Password string
+	Ip         string
+	Port       string
+	User       string
+	Password   string
+	SshTimeout time.Duration
 }
 
-// Launch 执行
 func (sc *SshConnector) Launch() bool {
 	return false
 }
 
-// LoadConfig 构造连接配置
 func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
+	// If no timeout has been set, set 5 second
+	if sc.SshTimeout == 0 {
+		sc.SshTimeout = 5 * time.Second
+	}
 	config = &ssh.ClientConfig{
 		User: sc.User,
 		Auth: []ssh.AuthMethod{
@@ -42,12 +43,11 @@ func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		ClientVersion:   "",
-		Timeout:         sshClientTimeout,
+		Timeout:         sc.SshTimeout,
 	}
 	return
 }
 
-// CreateConnection 创建连接
 func (sc *SshConnector) CreateConnection() (sshClient *ssh.Client, err error) {
 	addr := sc.Ip + ":" + sc.Port
 	config := sc.LoadConfig()
@@ -60,7 +60,6 @@ func (sc *SshConnector) CreateConnection() (sshClient *ssh.Client, err error) {
 	return
 }
 
-// CloseConnection 关闭连接
 func (sc *SshConnector) CloseConnection(sshClient *ssh.Client) {
 	err := sshClient.Close()
 	if err != nil {
@@ -68,7 +67,6 @@ func (sc *SshConnector) CloseConnection(sshClient *ssh.Client) {
 	}
 }
 
-// TryToConnect 尝试创建连接
 func (sc *SshConnector) TryToConnect() (err error) {
 	sshClient, err := sc.CreateConnection()
 	if err != nil {
