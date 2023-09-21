@@ -7,9 +7,8 @@ import (
 )
 
 const (
-	sshProtocol      string = "tcp"
-	sshClientTimeout        = 2 * time.Second
-	TerminalTerm            = "xterm"
+	sshProtocol  string = "tcp"
+	TerminalTerm        = "xterm"
 )
 
 type Connector interface {
@@ -32,10 +31,6 @@ func (sc *SshConnector) Launch() bool {
 }
 
 func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
-	// If no timeout has been set, set 5 second
-	if sc.SshTimeout == 0 {
-		sc.SshTimeout = 5 * time.Second
-	}
 	config = &ssh.ClientConfig{
 		User: sc.User,
 		Auth: []ssh.AuthMethod{

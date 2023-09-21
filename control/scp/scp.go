@@ -11,6 +11,8 @@ import (
 	"tryssh/utils"
 )
 
+const sshClientTimeoutWhenLogin = 5 * time.Second
+
 type Controller struct {
 	source        string
 	destination   string
@@ -67,6 +69,8 @@ func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerL
 		Src:          cc.source,
 		Dest:         cc.destination,
 	}
+	// Set default timeout time
+	lan.SshTimeout = sshClientTimeoutWhenLogin
 	if lan.Launch() {
 		os.Exit(0)
 	} else {
@@ -92,6 +96,11 @@ func (cc *Controller) tryCopyWithoutCache(user string) {
 		cc.configuration.ServerLists = append(cc.configuration.ServerLists, *newServerCache)
 		if config.UpdateConfig(cc.configuration) {
 			utils.Logger.Infoln("Cache added.\n\n")
+			// If the timeout time is less than sshClientTimeoutWhenLogin during login,
+			// change to sshClientTimeoutWhenLogin
+			if hitLaunchers[0].SshTimeout < sshClientTimeoutWhenLogin {
+				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
+			}
 			hitLaunchers[0].Launch()
 		} else {
 			utils.Logger.Errorln("Cache added failed.\n\n")
@@ -111,6 +120,10 @@ func (cc *Controller) searchAliasExistsOrNot() {
 func concurrencyTryToConnect(concurrency int, launchers []*scp.Launcher) []*scp.Launcher {
 	var hitLaunchers []*scp.Launcher
 	var mutex sync.Mutex
+	// If the number of launchers is less than the set concurrency, change the concurrency to the number of launchers
+	if concurrency > len(launchers) {
+		concurrency = len(launchers)
+	}
 	launchersChan := make(chan *scp.Launcher)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	// Producer
