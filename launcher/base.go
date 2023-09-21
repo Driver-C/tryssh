@@ -37,7 +37,6 @@ func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
 			ssh.Password(sc.Password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		ClientVersion:   "",
 		Timeout:         sc.SshTimeout,
 	}
 	return

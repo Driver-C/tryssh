@@ -1,6 +1,7 @@
 package scp
 
 import (
+	"github.com/cheggaaa/pb/v3"
 	"github.com/pkg/sftp"
 	"io"
 	"os"
@@ -49,7 +50,8 @@ func (c *Launcher) createScpClient() (sftpClient *sftp.Client) {
 	if errSsh != nil {
 		return
 	}
-	sftpClient, errScp := sftp.NewClient(sshClient)
+	sftpClient, errScp := sftp.NewClient(sshClient, sftp.UseConcurrentWrites(true),
+		sftp.UseConcurrentReads(true))
 	if errScp != nil {
 		utils.Logger.Fatalln(errScp.Error())
 	}
@@ -84,7 +86,7 @@ func (c *Launcher) upload(local, remote string) bool {
 		}
 	}(localFile)
 
-	remoteFile, err := sftpClient.OpenFile(sftp.Join(remote, remoteFileName), os.O_CREATE|os.O_RDWR|os.O_EXCL)
+	remoteFile, err := sftpClient.Create(sftp.Join(remote, remoteFileName))
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	}
@@ -95,13 +97,22 @@ func (c *Launcher) upload(local, remote string) bool {
 		}
 	}(remoteFile)
 
-	transSize, err := io.Copy(remoteFile, localFile)
+	localFileInfo, _ := localFile.Stat()
+	localFileSize := localFileInfo.Size()
+	progressBar := pb.New64(localFileSize)
+	barReader := progressBar.NewProxyReader(localFile)
+	localReader := io.LimitReader(barReader, localFileSize)
+	progressBar.Start()
+	// Reader must be io.Reader, bytes.Reader or satisfy one of the following interfaces:
+	// Len() int, Size() int64, Stat() (os.FileInfo, error).
+	// Or the concurrent upload can not work.
+	transSize, err := io.Copy(remoteFile, localReader)
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
-	} else {
-		utils.Logger.Infof("File: %s uploaded successfully. Transmission size: %s.\n",
-			remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	}
+	progressBar.Finish()
+	utils.Logger.Infof("File: %s uploaded successfully. Transmission size: %s.\n",
+		remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	return true
 }
 
@@ -126,7 +137,7 @@ func (c *Launcher) download(local, remote string) bool {
 		}
 	}(remoteFile)
 
-	localFile, err := os.OpenFile(sftp.Join(local, localFileName), os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+	localFile, err := os.Create(sftp.Join(local, localFileName))
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	}
@@ -137,12 +148,17 @@ func (c *Launcher) download(local, remote string) bool {
 		}
 	}(localFile)
 
-	transSize, err := io.Copy(localFile, remoteFile)
+	remoteFileInfo, _ := remoteFile.Stat()
+	remoteFileSize := remoteFileInfo.Size()
+	progressBar := pb.New64(remoteFileSize)
+	barWriter := progressBar.NewProxyWriter(localFile)
+	progressBar.Start()
+	transSize, err := io.Copy(barWriter, remoteFile)
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
-	} else {
-		utils.Logger.Infof("File: %s downloaded successfully. Transmission size: %s.\n",
-			remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	}
+	progressBar.Finish()
+	utils.Logger.Infof("File: %s downloaded successfully. Transmission size: %s.\n",
+		remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	return true
 }
