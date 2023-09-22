@@ -5,7 +5,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const VERSION = "0.2.3"
+var (
+	TrysshVersion  string
+	BuildGoVersion string
+	BuildTime      string
+)
 
 func NewVersionCommand() *cobra.Command {
 	versionCmd := &cobra.Command{
@@ -13,7 +17,8 @@ func NewVersionCommand() *cobra.Command {
 		Short: "Print the client version information for the current context",
 		Long:  "Print the client version information for the current context",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(VERSION)
+			fmt.Printf("TrysshVersion: %s, GoVersion: %s, BuildTime: %s\n",
+				TrysshVersion, BuildGoVersion, BuildTime)
 		},
 	}
 	return versionCmd
