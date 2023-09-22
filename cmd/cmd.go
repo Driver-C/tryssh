@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"tryssh/cmd/alias"
+	"tryssh/cmd/create"
 	"tryssh/cmd/scp"
 	"tryssh/cmd/ssh"
 	"tryssh/cmd/version"
@@ -18,6 +19,7 @@ func NewTrysshCommand() *cobra.Command {
 	rootCmd.AddCommand(ssh.NewSshCommand())
 	rootCmd.AddCommand(scp.NewScpCommand())
 	rootCmd.AddCommand(alias.NewAliasCommand())
+	rootCmd.AddCommand(create.NewCreateCommand())
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	return rootCmd
 }
