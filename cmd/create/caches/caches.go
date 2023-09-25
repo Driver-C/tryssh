@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/spf13/cobra"
 	"tryssh/config"
-	createControl "tryssh/control/create"
+	"tryssh/control/create"
 	"tryssh/utils"
 )
 
@@ -21,7 +21,7 @@ func NewCachesCommand() *cobra.Command {
 			newPort, _ := cmd.Flags().GetString("port")
 			newPassword, _ := cmd.Flags().GetString("pwd")
 			newAlias, _ := cmd.Flags().GetString("alias")
-			newCacheContent := createControl.CacheContent{
+			newCacheContent := create.CacheContent{
 				Ip:       newIp,
 				User:     newUser,
 				Port:     newPort,
@@ -34,7 +34,7 @@ func NewCachesCommand() *cobra.Command {
 				return
 			}
 			configuration := config.LoadConfig()
-			createCtl := createControl.NewCreateController(createType, string(contentJson), configuration)
+			createCtl := create.NewCreateController(createType, string(contentJson), configuration)
 			createCtl.ExecuteCreate()
 		},
 	}

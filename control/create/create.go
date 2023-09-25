@@ -13,11 +13,6 @@ const (
 	typeCaches    = "caches"
 )
 
-var (
-	updateConfigCompletedTemplate = "Create %s: %s completed.\n"
-	updateConfigFailedTemplate    = "Create %s: %s failed.\n"
-)
-
 type CacheContent struct {
 	Ip       string `json:"ip"`
 	Port     string `json:"port"`
@@ -51,9 +46,9 @@ func (cc Controller) ExecuteCreate() {
 
 func (cc Controller) updateConfig() {
 	if config.UpdateConfig(cc.configuration) {
-		utils.Logger.Infof(updateConfigCompletedTemplate, cc.createType, cc.createContent)
+		utils.Logger.Infof("Create %s: %s completed.\n", cc.createType, cc.createContent)
 	} else {
-		utils.Logger.Errorf(updateConfigFailedTemplate, cc.createType, cc.createContent)
+		utils.Logger.Errorf("Create %s: %s failed.\n", cc.createType, cc.createContent)
 	}
 }
 
