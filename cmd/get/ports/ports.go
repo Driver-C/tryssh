@@ -3,22 +3,24 @@ package ports
 import (
 	"github.com/spf13/cobra"
 	"tryssh/config"
-	"tryssh/control/create"
+	"tryssh/control/get"
 )
 
-const createType = "ports"
+const getType = "ports"
 
 func NewPortsCommand() *cobra.Command {
 	portsCmd := &cobra.Command{
 		Use:   "ports <port>",
-		Args:  cobra.ExactArgs(1),
-		Short: "Create a alternate port",
-		Long:  "Create a alternate port",
+		Short: "Get alternate ports",
+		Long:  "Get alternate ports",
 		Run: func(cmd *cobra.Command, args []string) {
-			port := args[0]
+			var port string
+			if len(args) > 0 {
+				port = args[0]
+			}
 			configuration := config.LoadConfig()
-			createCtl := create.NewCreateController(createType, port, configuration)
-			createCtl.ExecuteCreate()
+			getCtl := get.NewGetController(getType, port, configuration)
+			getCtl.ExecuteGet()
 		},
 	}
 	return portsCmd
