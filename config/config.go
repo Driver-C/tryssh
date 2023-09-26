@@ -4,13 +4,28 @@ import (
 	"github.com/schwarmco/go-cartesian-product"
 	"gopkg.in/yaml.v3"
 	"os"
+	"os/user"
+	"path/filepath"
 	"tryssh/launcher"
 	"tryssh/utils"
 )
 
 const (
-	configPath = "/usr/local/etc/tryssh.yaml"
+	configFileName = "tryssh.db"
+	configDirName  = ".tryssh"
 )
+
+var configPath string
+
+func init() {
+	if usr, err := user.Current(); err != nil {
+		utils.Logger.Warnf("Unable to obtain current user information: %s, "+
+			"Will use the current directory as the configuration file directory.", err)
+		configPath = filepath.Join("./", configDirName, configFileName)
+	} else {
+		configPath = filepath.Join(usr.HomeDir, configDirName, configFileName)
+	}
+}
 
 // MainConfig Main config
 type MainConfig struct {
