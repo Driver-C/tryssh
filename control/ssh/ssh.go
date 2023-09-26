@@ -2,7 +2,6 @@ package ssh
 
 import (
 	"context"
-	"os"
 	"sync"
 	"time"
 	"tryssh/config"
@@ -41,17 +40,14 @@ func (sc *Controller) TryLogin(user string, concurrency int, sshTimeout time.Dur
 		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", sc.targetIp)
 		sc.tryLoginWithoutCache(user)
 	}
-	utils.Logger.Fatalln("There is no password combination that can log in successfully\n")
 }
 
 func (sc *Controller) tryLoginWithCache(user string, targetServer *config.ServerListConfig) {
 	lan := &ssh.Launcher{SshConnector: *config.GetSshConnectorFromConfig(targetServer)}
 	// Set default timeout time
 	lan.SshTimeout = sshClientTimeoutWhenLogin
-	if lan.Launch() {
-		os.Exit(0)
-	} else {
-		utils.Logger.Errorln("Failed to log in with cached information. Start trying to login again.\n\n")
+	if !lan.Launch() {
+		utils.Logger.Errorf("Failed to log in with cached information. Start trying to login again.\n\n")
 		sc.tryLoginWithoutCache(user)
 	}
 }
@@ -78,11 +74,12 @@ func (sc *Controller) tryLoginWithoutCache(user string) {
 			if hitLaunchers[0].SshTimeout < sshClientTimeoutWhenLogin {
 				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
 			}
-			hitLaunchers[0].Launch()
+			if !hitLaunchers[0].Launch() {
+				utils.Logger.Errorf("There is no password combination that can log in.\n")
+			}
 		} else {
-			utils.Logger.Errorln("Cache added failed.\n\n")
+			utils.Logger.Errorf("Cache added failed.\n\n")
 		}
-		os.Exit(0)
 	}
 }
 
