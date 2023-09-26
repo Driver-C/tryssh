@@ -65,8 +65,7 @@ func generateConfig() {
 	_ = utils.FileYamlMarshalAndWrite(configPath, &MainConfig{})
 	utils.Logger.Infoln("Generating configuration file successful.\n")
 	utils.Logger.Warnln("Main setting is empty. " +
-		"You need to configure the main configuration before running again.\n")
-	os.Exit(0)
+		"You need to create some users, ports and passwords before running again.\n")
 }
 
 func LoadConfig() (c *MainConfig) {
@@ -83,8 +82,7 @@ func LoadConfig() (c *MainConfig) {
 		} else {
 			if len(c.Main.Ports) == 0 || len(c.Main.Users) == 0 || len(c.Main.Passwords) == 0 {
 				utils.Logger.Warnln("Main setting is empty. " +
-					"You need to configure the main configuration before running again.\n")
-				os.Exit(0)
+					"You need to create some users, ports and passwords before running again.\n")
 			}
 		}
 	} else {

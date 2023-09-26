@@ -1,5 +1,5 @@
 PACKAGE := tryssh/cmd/version
-VERSION := v0.3.0
+VERSION := v0.3.1
 GO_VERSION := $(shell go version | awk '{print $$3}')
 BUILD_TIME := $(shell date -u '+%Y-%m-%d %H:%M:%S')
 LDFLAGS :=

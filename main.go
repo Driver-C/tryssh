@@ -14,6 +14,6 @@ func main() {
 
 	rootCmd := cmd.NewTrysshCommand()
 	if err := rootCmd.Execute(); err != nil {
-		utils.Logger.Fatalln(err)
+		utils.Logger.Errorln(err)
 	}
 }

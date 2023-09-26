@@ -2,7 +2,6 @@ package scp
 
 import (
 	"context"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -60,7 +59,6 @@ func (cc *Controller) TryCopy(user string, concurrency int, sshTimeout time.Dura
 		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", cc.destIp)
 		cc.tryCopyWithoutCache(user)
 	}
-	utils.Logger.Fatalln("There is no password combination that can log in successfully\n")
 }
 
 func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerListConfig) {
@@ -71,10 +69,8 @@ func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerL
 	}
 	// Set default timeout time
 	lan.SshTimeout = sshClientTimeoutWhenLogin
-	if lan.Launch() {
-		os.Exit(0)
-	} else {
-		utils.Logger.Errorln("Failed to log in with cached information. Start trying to login again.\n\n")
+	if !lan.Launch() {
+		utils.Logger.Errorf("Failed to log in with cached information. Start trying to login again.\n\n")
 		cc.tryCopyWithoutCache(user)
 	}
 }
@@ -101,11 +97,12 @@ func (cc *Controller) tryCopyWithoutCache(user string) {
 			if hitLaunchers[0].SshTimeout < sshClientTimeoutWhenLogin {
 				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
 			}
-			hitLaunchers[0].Launch()
+			if !hitLaunchers[0].Launch() {
+				utils.Logger.Errorf("There is no password combination that can log in.\n")
+			}
 		} else {
-			utils.Logger.Errorln("Cache added failed.\n\n")
+			utils.Logger.Errorf("Cache added failed.\n\n")
 		}
-		os.Exit(0)
 	}
 }
 
