@@ -1,6 +1,7 @@
 package alias
 
 import (
+	"fmt"
 	"tryssh/config"
 	"tryssh/utils"
 )
@@ -41,12 +42,12 @@ func (ac *Controller) ListAlias() {
 	for _, server := range ac.configuration.ServerLists {
 		if ac.alias == "" {
 			if server.Alias != "" {
-				utils.Logger.Infof("Alias: %s Server: %s\n", server.Alias, server.Ip)
+				fmt.Printf("Alias: %s	Server: %s\n", server.Alias, server.Ip)
 				aliasCount++
 			}
 		} else {
 			if server.Alias == ac.alias {
-				utils.Logger.Infof("Alias: %s Server: %s\n", server.Alias, server.Ip)
+				fmt.Printf("Alias: %s	Server: %s\n", server.Alias, server.Ip)
 				aliasCount++
 			}
 		}

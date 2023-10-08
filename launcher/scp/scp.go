@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/sftp"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"tryssh/launcher"
@@ -13,22 +14,34 @@ import (
 
 type Launcher struct {
 	launcher.SshConnector
-	Src  string
-	Dest string
+	Src       string
+	Dest      string
+	Recursive bool
 }
 
 func (c *Launcher) Launch() bool {
-	switch {
-	case strings.Contains(c.Src, c.Ip):
-		return c.download(c.Dest, strings.Split(c.Src, ":")[1])
-	case strings.Contains(c.Dest, c.Ip):
-		return c.upload(c.Src, strings.Split(c.Dest, ":")[1])
+	sftpClient := c.createScpClient()
+	if sftpClient == nil {
+		return false
 	}
+	defer c.closeScpClient(sftpClient)
+
+	switch {
+	case strings.Contains(c.Src, c.Ip) && !c.Recursive:
+		return c.download(c.Dest, strings.Split(c.Src, ":")[1], sftpClient)
+	case strings.Contains(c.Src, c.Ip) && c.Recursive:
+		return c.downloadDir(c.Dest, strings.Split(c.Src, ":")[1], sftpClient)
+	case strings.Contains(c.Dest, c.Ip) && !c.Recursive:
+		return c.upload(c.Src, strings.Split(c.Dest, ":")[1], sftpClient)
+	case strings.Contains(c.Dest, c.Ip) && c.Recursive:
+		return c.uploadDir(c.Src, strings.Split(c.Dest, ":")[1], sftpClient)
+	}
+
 	return false
 }
 
 func NewScpLaunchersByCombinations(combinations chan []interface{}, src string, dest string,
-	sshTimeout time.Duration) (launchers []*Launcher) {
+	recursive bool, sshTimeout time.Duration) (launchers []*Launcher) {
 	for com := range combinations {
 		launchers = append(launchers, &Launcher{
 			SshConnector: launcher.SshConnector{
@@ -38,8 +51,9 @@ func NewScpLaunchersByCombinations(combinations chan []interface{}, src string, 
 				Password:   com[3].(string),
 				SshTimeout: sshTimeout,
 			},
-			Src:  src,
-			Dest: dest,
+			Src:       src,
+			Dest:      dest,
+			Recursive: recursive,
 		})
 	}
 	return
@@ -65,15 +79,14 @@ func (c *Launcher) closeScpClient(sftpClient *sftp.Client) {
 	}
 }
 
-func (c *Launcher) upload(local, remote string) bool {
-	sftpClient := c.createScpClient()
-	if sftpClient == nil {
-		return false
-	}
-	defer c.closeScpClient(sftpClient)
+func (c *Launcher) upload(local, remote string, sftpClient *sftp.Client) bool {
 	localPath := strings.Split(local, "/")
 	localFileName := localPath[len(localPath)-1]
-	remoteFileName := localFileName
+	prefix := local + " "
+	var remoteFileName string
+	if !c.Recursive {
+		remoteFileName = localFileName
+	}
 
 	localFile, err := os.Open(local)
 	if err != nil {
@@ -100,31 +113,57 @@ func (c *Launcher) upload(local, remote string) bool {
 	localFileInfo, _ := localFile.Stat()
 	localFileSize := localFileInfo.Size()
 	progressBar := pb.New64(localFileSize)
+	progressBar.Set("prefix", prefix)
 	barReader := progressBar.NewProxyReader(localFile)
 	localReader := io.LimitReader(barReader, localFileSize)
 	progressBar.Start()
 	// Reader must be io.Reader, bytes.Reader or satisfy one of the following interfaces:
 	// Len() int, Size() int64, Stat() (os.FileInfo, error).
 	// Or the concurrent upload can not work.
-	transSize, err := io.Copy(remoteFile, localReader)
+	_, err = io.Copy(remoteFile, localReader)
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	}
 	progressBar.Finish()
-	utils.Logger.Infof("File: %s uploaded successfully. Transmission size: %s.\n",
-		remoteFileName, utils.ByteSizeFormat(float64(transSize)))
 	return true
 }
 
-func (c *Launcher) download(local, remote string) bool {
-	sftpClient := c.createScpClient()
-	if sftpClient == nil {
+func (c *Launcher) uploadDir(local, remote string, sftpClient *sftp.Client) bool {
+	// Create remote root directory
+	if err := sftpClient.MkdirAll(remote); err != nil {
+		utils.Logger.Errorln("Unable to create remote directory: ", err)
 		return false
 	}
-	defer c.closeScpClient(sftpClient)
+	entries, err := os.ReadDir(local)
+	if err != nil {
+		utils.Logger.Errorln(err.Error())
+		return false
+	}
+	for _, entry := range entries {
+		localPath := filepath.Join(local, entry.Name())
+		remotePath := filepath.Join(remote, entry.Name())
+		if entry.IsDir() {
+			// Create remote directory
+			if err := sftpClient.MkdirAll(remotePath); err != nil {
+				utils.Logger.Errorln("Unable to create remote directory: ", err)
+				return false
+			}
+			c.uploadDir(localPath, remotePath, sftpClient)
+		} else {
+			c.upload(localPath, remotePath, sftpClient)
+		}
+	}
+	return true
+}
+
+func (c *Launcher) download(local, remote string, sftpClient *sftp.Client) bool {
 	remotePath := strings.Split(remote, "/")
 	remoteFileName := remotePath[len(remotePath)-1]
-	localFileName := remoteFileName
+	prefix := remote + " "
+	var localFileName string
+	if !c.Recursive {
+		localFileName = remoteFileName
+	}
 
 	remoteFile, err := sftpClient.Open(remote)
 	if err != nil {
@@ -151,14 +190,41 @@ func (c *Launcher) download(local, remote string) bool {
 	remoteFileInfo, _ := remoteFile.Stat()
 	remoteFileSize := remoteFileInfo.Size()
 	progressBar := pb.New64(remoteFileSize)
+	progressBar.Set("prefix", prefix)
 	barWriter := progressBar.NewProxyWriter(localFile)
 	progressBar.Start()
-	transSize, err := io.Copy(barWriter, remoteFile)
+	_, err = io.Copy(barWriter, remoteFile)
 	if err != nil {
 		utils.Logger.Fatalln(err.Error())
 	}
 	progressBar.Finish()
-	utils.Logger.Infof("File: %s downloaded successfully. Transmission size: %s.\n",
-		remoteFileName, utils.ByteSizeFormat(float64(transSize)))
+	return true
+}
+
+func (c *Launcher) downloadDir(local, remote string, sftpClient *sftp.Client) bool {
+	// Create local root directory
+	if err := os.MkdirAll(local, 0755); err != nil {
+		utils.Logger.Errorln("Unable to create local directory: ", err)
+		return false
+	}
+	entries, err := sftpClient.ReadDir(remote)
+	if err != nil {
+		utils.Logger.Errorln(err.Error())
+		return false
+	}
+	for _, entry := range entries {
+		localPath := filepath.Join(local, entry.Name())
+		remotePath := filepath.Join(remote, entry.Name())
+		if entry.IsDir() {
+			// Create local directory
+			if err := os.MkdirAll(localPath, 0755); err != nil {
+				utils.Logger.Errorln("Unable to create local directory: ", err)
+				return false
+			}
+			c.downloadDir(localPath, remotePath, sftpClient)
+		} else {
+			c.download(localPath, remotePath, sftpClient)
+		}
+	}
 	return true
 }

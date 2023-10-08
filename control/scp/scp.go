@@ -21,14 +21,17 @@ type Controller struct {
 	destIp        string
 	concurrency   int
 	sshTimeout    time.Duration
+	recursive     bool
 }
 
 // TryCopy Functional entrance
-func (cc *Controller) TryCopy(user string, concurrency int, sshTimeout time.Duration) {
+func (cc *Controller) TryCopy(user string, concurrency int, recursive bool, sshTimeout time.Duration) {
 	// Set timeout
 	cc.sshTimeout = sshTimeout
 	// Set concurrency
 	cc.concurrency = concurrency
+	// Set recursive or not
+	cc.recursive = recursive
 	if strings.Contains(cc.source, ":") {
 		cc.destIp = strings.Split(cc.source, ":")[0]
 		remotePath := strings.Split(cc.source, ":")[1]
@@ -66,6 +69,7 @@ func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerL
 		SshConnector: *config.GetSshConnectorFromConfig(targetServer),
 		Src:          cc.source,
 		Dest:         cc.destination,
+		Recursive:    cc.recursive,
 	}
 	// Set default timeout time
 	lan.SshTimeout = sshClientTimeoutWhenLogin
@@ -77,7 +81,7 @@ func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerL
 
 func (cc *Controller) tryCopyWithoutCache(user string) {
 	combinations := config.GenerateCombination(cc.destIp, user, cc.configuration)
-	launchers := scp.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination, cc.sshTimeout)
+	launchers := scp.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination, cc.recursive, cc.sshTimeout)
 	hitLaunchers := concurrencyTryToConnect(cc.concurrency, launchers)
 	if hitLaunchers != nil {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
@@ -98,11 +102,13 @@ func (cc *Controller) tryCopyWithoutCache(user string) {
 				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
 			}
 			if !hitLaunchers[0].Launch() {
-				utils.Logger.Errorf("There is no password combination that can log in.\n")
+				utils.Logger.Errorf("Login failed.\n")
 			}
 		} else {
 			utils.Logger.Errorf("Cache added failed.\n\n")
 		}
+	} else {
+		utils.Logger.Errorf("There is no password combination that can log in.\n")
 	}
 }
 
