@@ -75,11 +75,13 @@ func (sc *Controller) tryLoginWithoutCache(user string) {
 				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
 			}
 			if !hitLaunchers[0].Launch() {
-				utils.Logger.Errorf("There is no password combination that can log in.\n")
+				utils.Logger.Errorf("Login failed.\n")
 			}
 		} else {
 			utils.Logger.Errorf("Cache added failed.\n\n")
 		}
+	} else {
+		utils.Logger.Errorf("There is no password combination that can log in.\n")
 	}
 }
 
