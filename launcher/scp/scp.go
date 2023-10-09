@@ -26,6 +26,9 @@ func (c *Launcher) Launch() bool {
 	}
 	defer c.closeScpClient(sftpClient)
 
+	// Replace ~ to the real home directory
+	c.replaceHomeDirSymbol(sftpClient)
+
 	switch {
 	case strings.Contains(c.Src, c.Ip) && !c.Recursive:
 		return c.download(c.Dest, strings.Split(c.Src, ":")[1], sftpClient)
@@ -38,6 +41,16 @@ func (c *Launcher) Launch() bool {
 	}
 
 	return false
+}
+
+func (c *Launcher) replaceHomeDirSymbol(sftpClient *sftp.Client) {
+	remoteHomeDir, err := sftpClient.Getwd()
+	if err != nil {
+		utils.Logger.Fatalf("Failed to get home directory: %v", err)
+	}
+	homeDirSymbol := "~"
+	c.Src = strings.Replace(c.Src, homeDirSymbol, remoteHomeDir, -1)
+	c.Dest = strings.Replace(c.Dest, homeDirSymbol, remoteHomeDir, -1)
 }
 
 func NewScpLaunchersByCombinations(combinations chan []interface{}, src string, dest string,
@@ -80,13 +93,14 @@ func (c *Launcher) closeScpClient(sftpClient *sftp.Client) {
 }
 
 func (c *Launcher) upload(local, remote string, sftpClient *sftp.Client) bool {
-	localPath := strings.Split(local, "/")
-	localFileName := localPath[len(localPath)-1]
-	prefix := local + " "
+	localPathSegments := strings.Split(local, "/")
+	localFileName := localPathSegments[len(localPathSegments)-1]
+	// Openssh scp options rule imitation
 	var remoteFileName string
-	if !c.Recursive {
+	if strings.HasSuffix(remote, "/") {
 		remoteFileName = localFileName
 	}
+	prefix := local + " "
 
 	localFile, err := os.Open(local)
 	if err != nil {
@@ -110,8 +124,18 @@ func (c *Launcher) upload(local, remote string, sftpClient *sftp.Client) bool {
 		}
 	}(remoteFile)
 
-	localFileInfo, _ := localFile.Stat()
+	localFileInfo, err := localFile.Stat()
+	if err != nil {
+		utils.Logger.Errorln("Get local file stat failed: ", err)
+		return false
+	}
 	localFileSize := localFileInfo.Size()
+	localFilePerm := localFileInfo.Mode().Perm()
+	// Sync file permission
+	if err := remoteFile.Chmod(localFilePerm); err != nil {
+		utils.Logger.Errorln("Sync file permission failed: ", err)
+		return false
+	}
 	progressBar := pb.New64(localFileSize)
 	progressBar.Set("prefix", prefix)
 	barReader := progressBar.NewProxyReader(localFile)
@@ -129,6 +153,11 @@ func (c *Launcher) upload(local, remote string, sftpClient *sftp.Client) bool {
 }
 
 func (c *Launcher) uploadDir(local, remote string, sftpClient *sftp.Client) bool {
+	// Openssh scp options rule imitation
+	if strings.HasSuffix(remote, "/") {
+		remote = filepath.Join(remote, filepath.Base(local))
+	}
+
 	// Create remote root directory
 	if err := sftpClient.MkdirAll(remote); err != nil {
 		utils.Logger.Errorln("Unable to create remote directory: ", err)
@@ -159,11 +188,12 @@ func (c *Launcher) uploadDir(local, remote string, sftpClient *sftp.Client) bool
 func (c *Launcher) download(local, remote string, sftpClient *sftp.Client) bool {
 	remotePath := strings.Split(remote, "/")
 	remoteFileName := remotePath[len(remotePath)-1]
-	prefix := remote + " "
+	// Openssh scp options rule imitation
 	var localFileName string
-	if !c.Recursive {
+	if strings.HasSuffix(local, "/") {
 		localFileName = remoteFileName
 	}
+	prefix := remote + " "
 
 	remoteFile, err := sftpClient.Open(remote)
 	if err != nil {
@@ -187,7 +217,17 @@ func (c *Launcher) download(local, remote string, sftpClient *sftp.Client) bool 
 		}
 	}(localFile)
 
-	remoteFileInfo, _ := remoteFile.Stat()
+	remoteFileInfo, err := remoteFile.Stat()
+	if err != nil {
+		utils.Logger.Errorln("Get remote file stat failed: ", err)
+		return false
+	}
+	remoteFilePerm := remoteFileInfo.Mode().Perm()
+	// Sync file permission
+	if err := localFile.Chmod(remoteFilePerm); err != nil {
+		utils.Logger.Errorln("Sync file permission failed: ", err)
+		return false
+	}
 	remoteFileSize := remoteFileInfo.Size()
 	progressBar := pb.New64(remoteFileSize)
 	progressBar.Set("prefix", prefix)
@@ -202,6 +242,11 @@ func (c *Launcher) download(local, remote string, sftpClient *sftp.Client) bool 
 }
 
 func (c *Launcher) downloadDir(local, remote string, sftpClient *sftp.Client) bool {
+	// Openssh scp options rule imitation
+	if strings.HasSuffix(local, "/") {
+		local = filepath.Join(local, filepath.Base(remote))
+	}
+
 	// Create local root directory
 	if err := os.MkdirAll(local, 0755); err != nil {
 		utils.Logger.Errorln("Unable to create local directory: ", err)
