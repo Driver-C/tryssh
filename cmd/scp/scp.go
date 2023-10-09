@@ -12,10 +12,17 @@ const (
 	sshTimeout  = 1 * time.Second
 )
 
-var scpExample = `# download file
+var scpExample = `# Download test.txt file from 192.168.1.1 and place it under ./
 tryssh scp 192.168.1.1:/root/test.txt ./
-# upload file
-tryssh scp ./test.txt 192.168.1.1:/root/`
+# Upload test.txt file to 192.168.1.1 and place it under /root/
+tryssh scp ./test.txt 192.168.1.1:/root/
+# Download test.txt file from 192.168.1.1 and rename it to test2.txt and place it under ./
+tryssh scp 192.168.1.1:/root/test.txt ./test2.txt
+
+# Download testDir directory from 192.168.1.1 and place it under ~/Downloads/
+tryssh scp -r 192.168.1.1:/root/testDir ~/Downloads/
+# Upload testDir directory to 192.168.1.1 and rename it to testDir2 and place it under /root/
+tryssh scp -r ~/Downloads/testDir 192.168.1.1:/root/testDir2`
 
 func NewScpCommand() *cobra.Command {
 	scpCmd := &cobra.Command{
