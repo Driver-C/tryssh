@@ -17,8 +17,17 @@ func NewVersionCommand() *cobra.Command {
 		Short: "Print the client version information for the current context",
 		Long:  "Print the client version information for the current context",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("TrysshVersion: %s, GoVersion: %s, BuildTime: %s\n",
-				TrysshVersion, BuildGoVersion, BuildTime)
+			var versionContent string
+			if TrysshVersion != "" {
+				versionContent += fmt.Sprintf("TrysshVersion: %s\n", TrysshVersion)
+			}
+			if BuildGoVersion != "" {
+				versionContent += fmt.Sprintf("GoVersion: %s\n", BuildGoVersion)
+			}
+			if BuildTime != "" {
+				versionContent += fmt.Sprintf("BuildTime: %s\n", BuildTime)
+			}
+			fmt.Printf(versionContent)
 		},
 	}
 	return versionCmd
