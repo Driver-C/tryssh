@@ -58,14 +58,18 @@ func (sc *Controller) tryLoginWithoutCache(user string) {
 	hitLaunchers := concurrencyTryToConnect(sc.concurrency, launchers)
 	if hitLaunchers != nil {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
+		// The new server cache information
+		newServerCache := config.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
 		// Determine if the login attempt was successful after the old cache login failed.
 		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
 		if sc.cacheIsFound {
+			// Sync outdated cache's alias
+			newServerCache.Alias = sc.configuration.ServerLists[sc.cacheIndex].Alias
+
 			utils.Logger.Infoln("The old cache will be deleted.\n")
 			sc.configuration.ServerLists = append(
 				sc.configuration.ServerLists[:sc.cacheIndex], sc.configuration.ServerLists[sc.cacheIndex+1:]...)
 		}
-		newServerCache := config.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
 		sc.configuration.ServerLists = append(sc.configuration.ServerLists, *newServerCache)
 		if config.UpdateConfig(sc.configuration) {
 			utils.Logger.Infoln("Cache added.\n\n")
