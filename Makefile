@@ -16,7 +16,7 @@ BINARY_VERSION ?= ${GIT_TAG}
 ifneq ($(BINARY_VERSION),)
 	LDFLAGS += -X '$(PACKAGE).TrysshVersion=$(BINARY_VERSION)'
 else
-	# If you cannot find any information that can be used as a version number, change it to debug
+	# If cannot find any information that can be used as a version number, change it to debug
 	BINARY_VERSION = "debug"
 endif
 
