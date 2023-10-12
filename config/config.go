@@ -6,24 +6,29 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"tryssh/launcher"
 	"tryssh/utils"
 )
 
 const (
-	configFileName = "tryssh.db"
-	configDirName  = ".tryssh"
+	configFileName     = "tryssh.db"
+	configDirName      = ".tryssh"
+	knownHostsFileName = "known_hosts"
 )
 
-var configPath string
+var (
+	configPath     string
+	KnownHostsPath string
+)
 
 func init() {
 	if usr, err := user.Current(); err != nil {
 		utils.Logger.Warnf("Unable to obtain current user information: %s, "+
 			"Will use the current directory as the configuration file directory.", err)
 		configPath = filepath.Join("./", configDirName, configFileName)
+		KnownHostsPath = filepath.Join("./", configDirName, knownHostsFileName)
 	} else {
 		configPath = filepath.Join(usr.HomeDir, configDirName, configFileName)
+		KnownHostsPath = filepath.Join(usr.HomeDir, configDirName, knownHostsFileName)
 	}
 }
 
@@ -46,34 +51,6 @@ type ServerListConfig struct {
 	Alias    string `yaml:"alias"`
 }
 
-// GetSshConnectorFromConfig Get SshConnector by ServerListConfig
-func GetSshConnectorFromConfig(conf *ServerListConfig) *launcher.SshConnector {
-	return &launcher.SshConnector{
-		Ip:       conf.Ip,
-		Port:     conf.Port,
-		User:     conf.User,
-		Password: conf.Password,
-	}
-}
-
-// GetConfigFromSshConnector Get ServerListConfig by SshConnector
-func GetConfigFromSshConnector(tgt *launcher.SshConnector) *ServerListConfig {
-	return &ServerListConfig{
-		Ip:       tgt.Ip,
-		Port:     tgt.Port,
-		User:     tgt.User,
-		Password: tgt.Password,
-	}
-}
-
-func checkFileIsExist(filename string) (exist bool) {
-	exist = true
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		exist = false
-	}
-	return
-}
-
 // generateConfig Generate initial configuration file (force overwrite)
 func generateConfig() {
 	utils.Logger.Infoln("Generating configuration file.\n")
@@ -86,7 +63,7 @@ func generateConfig() {
 func LoadConfig() (c *MainConfig) {
 	c = new(MainConfig)
 
-	if checkFileIsExist(configPath) {
+	if utils.CheckFileIsExist(configPath) {
 		conf, err := os.ReadFile(configPath)
 		if err != nil {
 			utils.Logger.Fatalln("Configuration file load failed: ", err)
@@ -103,6 +80,14 @@ func LoadConfig() (c *MainConfig) {
 	} else {
 		utils.Logger.Infoln("Configuration file cannot be found, it will be generated automatically.\n")
 		generateConfig()
+	}
+
+	// known_hosts
+	if !utils.CheckFileIsExist(KnownHostsPath) {
+		// Default permission is 0600
+		if !utils.CreateFile(KnownHostsPath, 0600) {
+			utils.Logger.Fatalln("The known_hosts file creation failed")
+		}
 	}
 	return
 }

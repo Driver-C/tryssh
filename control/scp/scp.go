@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 	"tryssh/config"
+	"tryssh/launcher"
 	"tryssh/launcher/scp"
 	"tryssh/utils"
 )
@@ -66,7 +67,7 @@ func (cc *Controller) TryCopy(user string, concurrency int, recursive bool, sshT
 
 func (cc *Controller) tryCopyWithCache(user string, targetServer *config.ServerListConfig) {
 	lan := &scp.Launcher{
-		SshConnector: *config.GetSshConnectorFromConfig(targetServer),
+		SshConnector: *launcher.GetSshConnectorFromConfig(targetServer),
 		Src:          cc.source,
 		Dest:         cc.destination,
 		Recursive:    cc.recursive,
@@ -86,7 +87,7 @@ func (cc *Controller) tryCopyWithoutCache(user string) {
 	if hitLaunchers != nil {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
 		// The new server cache information
-		newServerCache := config.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
+		newServerCache := launcher.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
 		// Determine if the login attempt was successful after the old cache login failed.
 		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
 		if cc.cacheIsFound {
@@ -127,6 +128,7 @@ func (cc *Controller) searchAliasExistsOrNot() {
 func concurrencyTryToConnect(concurrency int, launchers []*scp.Launcher) []*scp.Launcher {
 	var hitLaunchers []*scp.Launcher
 	var mutex sync.Mutex
+	var hostKeyMutex sync.Mutex
 	// If the number of launchers is less than the set concurrency, change the concurrency to the number of launchers
 	if concurrency > len(launchers) {
 		concurrency = len(launchers)
@@ -160,6 +162,7 @@ func concurrencyTryToConnect(concurrency int, launchers []*scp.Launcher) []*scp.
 					if !ok {
 						return
 					}
+					launcherP.HostKeyMutex = &hostKeyMutex
 					if err := launcherP.TryToConnect(); err == nil {
 						mutex.Lock()
 						hitLaunchers = append(hitLaunchers, launcherP)
