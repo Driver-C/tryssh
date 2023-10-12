@@ -14,12 +14,12 @@ func NewCachesCommand() *cobra.Command {
 		Short: "Get alternate caches by ipAddress",
 		Long:  "Get alternate caches by ipAddress",
 		Run: func(cmd *cobra.Command, args []string) {
-			var cache string
+			var ipAddress string
 			if len(args) > 0 {
-				cache = args[0]
+				ipAddress = args[0]
 			}
 			configuration := config.LoadConfig()
-			getCtl := get.NewGetController(getType, cache, configuration)
+			getCtl := get.NewGetController(getType, ipAddress, configuration)
 			getCtl.ExecuteGet()
 		},
 	}
