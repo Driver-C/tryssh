@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 	"tryssh/config"
+	"tryssh/launcher"
 	"tryssh/launcher/ssh"
 	"tryssh/utils"
 )
@@ -43,7 +44,7 @@ func (sc *Controller) TryLogin(user string, concurrency int, sshTimeout time.Dur
 }
 
 func (sc *Controller) tryLoginWithCache(user string, targetServer *config.ServerListConfig) {
-	lan := &ssh.Launcher{SshConnector: *config.GetSshConnectorFromConfig(targetServer)}
+	lan := &ssh.Launcher{SshConnector: *launcher.GetSshConnectorFromConfig(targetServer)}
 	// Set default timeout time
 	lan.SshTimeout = sshClientTimeoutWhenLogin
 	if !lan.Launch() {
@@ -59,7 +60,7 @@ func (sc *Controller) tryLoginWithoutCache(user string) {
 	if hitLaunchers != nil {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
 		// The new server cache information
-		newServerCache := config.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
+		newServerCache := launcher.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
 		// Determine if the login attempt was successful after the old cache login failed.
 		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
 		if sc.cacheIsFound {
@@ -100,6 +101,7 @@ func (sc *Controller) searchAliasExistsOrNot() {
 func concurrencyTryToConnect(concurrency int, launchers []*ssh.Launcher) []*ssh.Launcher {
 	var hitLaunchers []*ssh.Launcher
 	var mutex sync.Mutex
+	var hostKeyMutex sync.Mutex
 	// If the number of launchers is less than the set concurrency, change the concurrency to the number of launchers
 	if concurrency > len(launchers) {
 		concurrency = len(launchers)
@@ -133,6 +135,7 @@ func concurrencyTryToConnect(concurrency int, launchers []*ssh.Launcher) []*ssh.
 					if !ok {
 						return
 					}
+					launcherP.HostKeyMutex = &hostKeyMutex
 					if err := launcherP.TryToConnect(); err == nil {
 						mutex.Lock()
 						hitLaunchers = append(hitLaunchers, launcherP)
