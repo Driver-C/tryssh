@@ -10,14 +10,14 @@ const deleteType = "caches"
 
 func NewCachesCommand() *cobra.Command {
 	cachesCmd := &cobra.Command{
-		Use:   "caches <cacheIndex>",
+		Use:   "caches <ipAddress>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Delete a alternate cache",
 		Long:  "Delete a alternate cache",
 		Run: func(cmd *cobra.Command, args []string) {
-			cacheIndex := args[0]
+			ipAddress := args[0]
 			configuration := config.LoadConfig()
-			deleteCtl := delete.NewDeleteController(deleteType, cacheIndex, configuration)
+			deleteCtl := delete.NewDeleteController(deleteType, ipAddress, configuration)
 			deleteCtl.ExecuteDelete()
 		},
 	}

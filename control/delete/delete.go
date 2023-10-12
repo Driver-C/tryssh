@@ -1,7 +1,6 @@
 package delete
 
 import (
-	"strconv"
 	"tryssh/config"
 	"tryssh/utils"
 )
@@ -46,20 +45,22 @@ func (dc Controller) ExecuteDelete() {
 			utils.Logger.Warnf("No matching password: %s\n", dc.deleteContent)
 		}
 	case typeCaches:
-		// dc.deleteContent is index of ServerList
-		index, err := strconv.Atoi(dc.deleteContent)
-		if err != nil {
-			utils.Logger.Errorln("Index is not of type int.")
-		} else {
-			cachesLen := len(dc.configuration.ServerLists)
-			if index < cachesLen {
-				utils.Logger.Infof("Delete cache \"%s\"\n", dc.configuration.ServerLists[index])
-				dc.configuration.ServerLists = append(dc.configuration.ServerLists[:index],
-					dc.configuration.ServerLists[index+1:]...)
-				dc.updateConfig()
-			} else {
-				utils.Logger.Errorf("Index out of range [%d] with length %d\n", index, cachesLen)
+		// dc.deleteContent is ipAddress
+		var deleteCount int
+		if dc.deleteContent != "" {
+			for index, server := range dc.configuration.ServerLists {
+				if server.Ip == dc.deleteContent {
+					dc.configuration.ServerLists = append(dc.configuration.ServerLists[:index],
+						dc.configuration.ServerLists[index+1:]...)
+					dc.updateConfig()
+					deleteCount++
+				}
 			}
+			if deleteCount == 0 {
+				utils.Logger.Warnf("No matching cache: %s\n", dc.deleteContent)
+			}
+		} else {
+			utils.Logger.Errorln("IP address cannot be empty characters")
 		}
 	}
 }
