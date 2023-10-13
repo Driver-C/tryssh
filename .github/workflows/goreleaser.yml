@@ -22,6 +22,9 @@ jobs:
       - name: Make All
         run: make multi VERSION="${{ github.ref_name }}"
 
+      - name: Publishing
+        run: GOPROXY=proxy.golang.org go list -m github.com/Driver-C/tryssh@latest
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
