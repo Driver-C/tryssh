@@ -1,10 +1,10 @@
 package alias
 
 import (
+	"github.com/Driver-C/tryssh/cmd/alias/list"
+	"github.com/Driver-C/tryssh/cmd/alias/set"
+	"github.com/Driver-C/tryssh/cmd/alias/unset"
 	"github.com/spf13/cobra"
-	"tryssh/cmd/alias/list"
-	"tryssh/cmd/alias/set"
-	"tryssh/cmd/alias/unset"
 )
 
 func NewAliasCommand() *cobra.Command {

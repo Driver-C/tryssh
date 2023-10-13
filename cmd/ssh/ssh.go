@@ -1,10 +1,10 @@
 package ssh
 
 import (
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/control/ssh"
 	"github.com/spf13/cobra"
 	"time"
-	"tryssh/config"
-	"tryssh/control/ssh"
 )
 
 const (

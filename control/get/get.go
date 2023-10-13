@@ -2,7 +2,7 @@ package get
 
 import (
 	"fmt"
-	"tryssh/config"
+	"github.com/Driver-C/tryssh/config"
 )
 
 const (

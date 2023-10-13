@@ -1,11 +1,11 @@
 package create
 
 import (
+	"github.com/Driver-C/tryssh/cmd/create/caches"
+	"github.com/Driver-C/tryssh/cmd/create/passwords"
+	"github.com/Driver-C/tryssh/cmd/create/ports"
+	"github.com/Driver-C/tryssh/cmd/create/users"
 	"github.com/spf13/cobra"
-	"tryssh/cmd/create/caches"
-	"tryssh/cmd/create/passwords"
-	"tryssh/cmd/create/ports"
-	"tryssh/cmd/create/users"
 )
 
 func NewCreateCommand() *cobra.Command {

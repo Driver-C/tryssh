@@ -2,8 +2,8 @@ package alias
 
 import (
 	"fmt"
-	"tryssh/config"
-	"tryssh/utils"
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/utils"
 )
 
 type Controller struct {

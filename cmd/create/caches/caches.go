@@ -2,10 +2,10 @@ package caches
 
 import (
 	"encoding/json"
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/control/create"
+	"github.com/Driver-C/tryssh/utils"
 	"github.com/spf13/cobra"
-	"tryssh/config"
-	"tryssh/control/create"
-	"tryssh/utils"
 )
 
 const createType = "caches"

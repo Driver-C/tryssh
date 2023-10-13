@@ -1,10 +1,10 @@
 package scp
 
 import (
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/control/scp"
 	"github.com/spf13/cobra"
 	"time"
-	"tryssh/config"
-	"tryssh/control/scp"
 )
 
 const (

@@ -1,6 +1,8 @@
 package scp
 
 import (
+	"github.com/Driver-C/tryssh/launcher"
+	"github.com/Driver-C/tryssh/utils"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/pkg/sftp"
 	"io"
@@ -8,8 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"tryssh/launcher"
-	"tryssh/utils"
 )
 
 type Launcher struct {
