@@ -1,4 +1,4 @@
-PACKAGE := tryssh/cmd/version
+PACKAGE := github.com/Driver-C/tryssh/cmd/version
 GO_VERSION := $(shell go version | awk '{print $$3}')
 BUILD_TIME := $(shell date -u '+%Y-%m-%d %H:%M:%S')
 LDFLAGS :=

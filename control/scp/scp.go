@@ -2,13 +2,13 @@ package scp
 
 import (
 	"context"
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/launcher"
+	"github.com/Driver-C/tryssh/launcher/scp"
+	"github.com/Driver-C/tryssh/utils"
 	"strings"
 	"sync"
 	"time"
-	"tryssh/config"
-	"tryssh/launcher"
-	"tryssh/launcher/scp"
-	"tryssh/utils"
 )
 
 const sshClientTimeoutWhenLogin = 5 * time.Second

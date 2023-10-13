@@ -1,9 +1,9 @@
 package passwords
 
 import (
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/control/delete"
 	"github.com/spf13/cobra"
-	"tryssh/config"
-	"tryssh/control/delete"
 )
 
 const deleteType = "passwords"

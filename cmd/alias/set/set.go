@@ -1,9 +1,9 @@
 package set
 
 import (
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/control/alias"
 	"github.com/spf13/cobra"
-	"tryssh/config"
-	"tryssh/control/alias"
 )
 
 func NewAliasSetCommand() *cobra.Command {

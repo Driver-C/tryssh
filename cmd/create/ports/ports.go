@@ -1,9 +1,9 @@
 package ports
 
 import (
+	"github.com/Driver-C/tryssh/config"
+	"github.com/Driver-C/tryssh/control/create"
 	"github.com/spf13/cobra"
-	"tryssh/config"
-	"tryssh/control/create"
 )
 
 const createType = "ports"

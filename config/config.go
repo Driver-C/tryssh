@@ -1,12 +1,12 @@
 package config
 
 import (
+	"github.com/Driver-C/tryssh/utils"
 	"github.com/schwarmco/go-cartesian-product"
 	"gopkg.in/yaml.v3"
 	"os"
 	"os/user"
 	"path/filepath"
-	"tryssh/utils"
 )
 
 const (

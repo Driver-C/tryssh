@@ -1,14 +1,14 @@
 package cmd
 
 import (
+	"github.com/Driver-C/tryssh/cmd/alias"
+	"github.com/Driver-C/tryssh/cmd/create"
+	"github.com/Driver-C/tryssh/cmd/delete"
+	"github.com/Driver-C/tryssh/cmd/get"
+	"github.com/Driver-C/tryssh/cmd/scp"
+	"github.com/Driver-C/tryssh/cmd/ssh"
+	"github.com/Driver-C/tryssh/cmd/version"
 	"github.com/spf13/cobra"
-	"tryssh/cmd/alias"
-	"tryssh/cmd/create"
-	"tryssh/cmd/delete"
-	"tryssh/cmd/get"
-	"tryssh/cmd/scp"
-	"tryssh/cmd/ssh"
-	"tryssh/cmd/version"
 )
 
 func NewTrysshCommand() *cobra.Command {

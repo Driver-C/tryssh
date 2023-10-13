@@ -1,12 +1,12 @@
 package ssh
 
 import (
+	"github.com/Driver-C/tryssh/launcher"
+	"github.com/Driver-C/tryssh/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"time"
-	"tryssh/launcher"
-	"tryssh/utils"
 )
 
 type Launcher struct {

@@ -1,11 +1,11 @@
 package get
 
 import (
+	"github.com/Driver-C/tryssh/cmd/get/caches"
+	"github.com/Driver-C/tryssh/cmd/get/passwords"
+	"github.com/Driver-C/tryssh/cmd/get/ports"
+	"github.com/Driver-C/tryssh/cmd/get/users"
 	"github.com/spf13/cobra"
-	"tryssh/cmd/get/caches"
-	"tryssh/cmd/get/passwords"
-	"tryssh/cmd/get/ports"
-	"tryssh/cmd/get/users"
 )
 
 func NewGetCommand() *cobra.Command {

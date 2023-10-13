@@ -1,11 +1,11 @@
 package delete
 
 import (
+	"github.com/Driver-C/tryssh/cmd/delete/caches"
+	"github.com/Driver-C/tryssh/cmd/delete/passwords"
+	"github.com/Driver-C/tryssh/cmd/delete/ports"
+	"github.com/Driver-C/tryssh/cmd/delete/users"
 	"github.com/spf13/cobra"
-	"tryssh/cmd/delete/caches"
-	"tryssh/cmd/delete/passwords"
-	"tryssh/cmd/delete/ports"
-	"tryssh/cmd/delete/users"
 )
 
 func NewDeleteCommand() *cobra.Command {
