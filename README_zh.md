@@ -1,5 +1,7 @@
 # tryssh
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/Driver-C/tryssh)](https://goreportcard.com/report/github.com/Driver-C/tryssh)
+
 [English](README.md) | 简体中文
 
 `tryssh`是一个具有密码猜测功能的命令行SSH终端工具。

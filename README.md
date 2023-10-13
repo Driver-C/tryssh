@@ -1,5 +1,7 @@
 # tryssh
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/Driver-C/tryssh)](https://goreportcard.com/report/github.com/Driver-C/tryssh)
+
 English | [简体中文](README_zh.md)
 
 `tryssh` is a command line SSH terminal tool with password guessing function. 
