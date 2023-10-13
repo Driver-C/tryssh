@@ -5,12 +5,12 @@ LDFLAGS :=
 
 GIT_TAG = $(shell git describe --tags --abbrev=0 --exact-match 2>/dev/null)
 
-os-archs=darwin:amd64 darwin:arm64 freebsd:amd64 linux:amd64 linux:arm linux:arm64 windows:amd64 windows:arm64
+OS_ARCH_LIST=darwin:amd64 darwin:arm64 freebsd:amd64 linux:amd64 linux:arm linux:arm64 windows:amd64 windows:arm64
 
 ifdef VERSION
 	BINARY_VERSION = $(VERSION)
 endif
-BINARY_VERSION ?= ${GIT_TAG}
+BINARY_VERSION ?= $(GIT_TAG)
 
 # Only set Version if building a tag or VERSION is set
 ifneq ($(BINARY_VERSION),)
@@ -41,14 +41,14 @@ clean:
 
 .PHONY: multi
 multi: tidy
-	@$(foreach n, $(os-archs),\
+	@$(foreach n, $(OS_ARCH_LIST),\
 		os=$(shell echo "$(n)" | cut -d : -f 1);\
 		arch=$(shell echo "$(n)" | cut -d : -f 2);\
-		target_suffix=${BINARY_VERSION}-$${os}-$${arch};\
-		echo "Build $${os}-$${arch}...";\
+		target_suffix=$(BINARY_VERSION)-$${os}-$${arch};\
+		echo "[==> Build $${os}-$${arch} start... <==]";\
 		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -v -trimpath -ldflags "$(LDFLAGS)" \
 		-o ./release/tryssh-$${target_suffix};\
-		echo "Build $${os}-$${arch} done";\
+		echo "[==> Build $${os}-$${arch} done <==]";\
 	)
-	@mv ./release/tryssh-${BINARY_VERSION}-windows-amd64 ./release/tryssh-${BINARY_VERSION}-windows-amd64.exe
-	@mv ./release/tryssh-${BINARY_VERSION}-windows-arm64 ./release/tryssh-${BINARY_VERSION}-windows-arm64.exe
+	@mv ./release/tryssh-$(BINARY_VERSION)-windows-amd64 ./release/tryssh-$(BINARY_VERSION)-windows-amd64.exe
+	@mv ./release/tryssh-$(BINARY_VERSION)-windows-arm64 ./release/tryssh-$(BINARY_VERSION)-windows-arm64.exe
