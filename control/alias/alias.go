@@ -31,7 +31,7 @@ func (ac *Controller) SetAlias() {
 		}
 	}
 	if config.UpdateConfig(ac.configuration) {
-		utils.Logger.Infof("%d cache infomation has been changed.\n", beSetCount)
+		utils.Logger.Infof("%d cache information has been changed.\n", beSetCount)
 	} else {
 		utils.Logger.Fatalln("Main config update failed.")
 	}
@@ -69,7 +69,7 @@ func (ac *Controller) UnsetAlias() {
 		}
 	}
 	if config.UpdateConfig(ac.configuration) {
-		utils.Logger.Infof("%d cache infomation has been changed.\n", beUnsetCount)
+		utils.Logger.Infof("%d cache information has been changed.\n", beUnsetCount)
 	} else {
 		utils.Logger.Fatalln("Main config update failed.")
 	}
