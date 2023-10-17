@@ -72,39 +72,39 @@ func (pc *Controller) interactiveDeleteCache(server config.ServerListConfig) boo
 
 func (pc *Controller) concurrencyDeleteCache() []config.ServerListConfig {
 	newServerList := make([]config.ServerListConfig, 0)
-	launchersChan := make(chan *ssh.Launcher)
+	serversChan := make(chan *config.ServerListConfig)
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
 
-	go func(launchersChan chan<- *ssh.Launcher) {
+	go func(serversChan chan<- *config.ServerListConfig) {
 		for _, server := range pc.configuration.ServerLists {
-			lan := &ssh.Launcher{SshConnector: *launcher.GetSshConnectorFromConfig(&server)}
-			launchersChan <- lan
+			newServer := server
+			serversChan <- &newServer
 		}
-		close(launchersChan)
-	}(launchersChan)
+		close(serversChan)
+	}(serversChan)
 
 	for i := 0; i < pc.concurrency; i++ {
 		wg.Add(1)
-		go func(launchersChan <-chan *ssh.Launcher, wg *sync.WaitGroup) {
+		go func(serversChan <-chan *config.ServerListConfig, wg *sync.WaitGroup) {
 			defer wg.Done()
 			for {
-				launcherP, ok := <-launchersChan
+				serverP, ok := <-serversChan
 				if !ok {
 					break
 				}
-				server := launcher.GetConfigFromSshConnector(&launcherP.SshConnector)
-				launcherP.SshTimeout = pc.sshTimeout
-				if err := launcherP.TryToConnect(); err == nil {
-					utils.Logger.Infof("Cache %v is still available.", server)
+				lan := &ssh.Launcher{SshConnector: *launcher.GetSshConnectorFromConfig(serverP)}
+				lan.SshTimeout = pc.sshTimeout
+				if err := lan.TryToConnect(); err == nil {
+					utils.Logger.Infof("Cache %v is still available.", *serverP)
 					mutex.Lock()
-					newServerList = append(newServerList, *server)
+					newServerList = append(newServerList, *serverP)
 					mutex.Unlock()
 				} else {
-					utils.Logger.Infof("The cache %v has been marked for deletion.", server)
+					utils.Logger.Infof("The cache %v has been marked for deletion.", *serverP)
 				}
 			}
-		}(launchersChan, &wg)
+		}(serversChan, &wg)
 	}
 	wg.Wait()
 	return newServerList
