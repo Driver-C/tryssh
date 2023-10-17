@@ -5,6 +5,7 @@ import (
 	"github.com/Driver-C/tryssh/cmd/create"
 	"github.com/Driver-C/tryssh/cmd/delete"
 	"github.com/Driver-C/tryssh/cmd/get"
+	"github.com/Driver-C/tryssh/cmd/prune"
 	"github.com/Driver-C/tryssh/cmd/scp"
 	"github.com/Driver-C/tryssh/cmd/ssh"
 	"github.com/Driver-C/tryssh/cmd/version"
@@ -24,6 +25,7 @@ func NewTrysshCommand() *cobra.Command {
 	rootCmd.AddCommand(create.NewCreateCommand())
 	rootCmd.AddCommand(delete.NewDeleteCommand())
 	rootCmd.AddCommand(get.NewGetCommand())
+	rootCmd.AddCommand(prune.NewPruneCommand())
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	return rootCmd
 }
