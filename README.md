@@ -37,7 +37,6 @@ Rankings do not differentiate priority levels.
 2. Completing unit test code
 3. Security-related features, such as encrypting configuration files, hiding sensitive information from plain text display, and switching to interactive password input
 4. Support for key-based authentication
-5. One-click functionality to check the availability of the current cache
 
 ## Quick Start
 
