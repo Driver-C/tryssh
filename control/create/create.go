@@ -30,13 +30,16 @@ type Controller struct {
 func (cc Controller) ExecuteCreate() {
 	switch cc.createType {
 	case typeUsers:
-		cc.configuration.Main.Users = append(cc.configuration.Main.Users, cc.createContent)
+		cc.configuration.Main.Users = utils.RemoveDuplicate(
+			append(cc.configuration.Main.Users, cc.createContent))
 		cc.updateConfig()
 	case typePorts:
-		cc.configuration.Main.Ports = append(cc.configuration.Main.Ports, cc.createContent)
+		cc.configuration.Main.Ports = utils.RemoveDuplicate(
+			append(cc.configuration.Main.Ports, cc.createContent))
 		cc.updateConfig()
 	case typePasswords:
-		cc.configuration.Main.Passwords = append(cc.configuration.Main.Passwords, cc.createContent)
+		cc.configuration.Main.Passwords = utils.RemoveDuplicate(
+			append(cc.configuration.Main.Passwords, cc.createContent))
 		cc.updateConfig()
 	case typeCaches:
 		cc.createCaches()

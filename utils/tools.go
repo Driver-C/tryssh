@@ -23,3 +23,16 @@ func InterfaceSlice(slice interface{}) []interface{} {
 
 	return ret
 }
+
+func RemoveDuplicate(s []string) []string {
+	result := make([]string, 0, len(s))
+	temp := map[string]bool{}
+
+	for _, v := range s {
+		if !temp[v] {
+			temp[v] = true
+			result = append(result, v)
+		}
+	}
+	return result
+}
