@@ -45,10 +45,16 @@ multi: tidy
 		os=$(shell echo "$(n)" | cut -d : -f 1);\
 		arch=$(shell echo "$(n)" | cut -d : -f 2);\
 		target_suffix=$(BINARY_VERSION)-$${os}-$${arch};\
+		bin_name="tryssh";\
+		if [ $${os} = "windows" ]; then bin_name="tryssh.exe"; fi;\
 		echo "[==> Build $${os}-$${arch} start... <==]";\
+		mkdir -p ./release/$${os}-$${arch};\
+		cp ./LICENSE ./release/$${os}-$${arch}/;\
 		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -v -trimpath -ldflags "$(LDFLAGS)" \
-		-o ./release/tryssh-$${target_suffix};\
+		-o ./release/$${os}-$${arch}/$${bin_name};\
+		cd ./release;\
+		zip -rq tryssh-$${target_suffix}.zip $${os}-$${arch};\
+		rm -rf $${os}-$${arch};\
+		cd ..;\
 		echo "[==> Build $${os}-$${arch} done <==]";\
 	)
-	@mv ./release/tryssh-$(BINARY_VERSION)-windows-amd64 ./release/tryssh-$(BINARY_VERSION)-windows-amd64.exe
-	@mv ./release/tryssh-$(BINARY_VERSION)-windows-arm64 ./release/tryssh-$(BINARY_VERSION)-windows-arm64.exe
