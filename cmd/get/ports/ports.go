@@ -10,9 +10,10 @@ const getType = "ports"
 
 func NewPortsCommand() *cobra.Command {
 	portsCmd := &cobra.Command{
-		Use:   "ports <port>",
-		Short: "Get alternate ports",
-		Long:  "Get alternate ports",
+		Use:     "ports <port>",
+		Short:   "Get alternate ports",
+		Long:    "Get alternate ports",
+		Aliases: []string{"port", "po"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var port string
 			if len(args) > 0 {

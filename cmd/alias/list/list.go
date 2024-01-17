@@ -8,9 +8,10 @@ import (
 
 func NewAliasListCommand() *cobra.Command {
 	aliasListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all alias",
-		Long:  "List all alias",
+		Use:     "list",
+		Short:   "List all alias",
+		Long:    "List all alias",
+		Aliases: []string{"ls"},
 		Run: func(cmd *cobra.Command, args []string) {
 			configuration := config.LoadConfig()
 			aliasController := alias.NewAliasController("", configuration, "")

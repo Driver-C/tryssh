@@ -10,9 +10,10 @@ import (
 
 func NewCreateCommand() *cobra.Command {
 	createCmd := &cobra.Command{
-		Use:   "create [command]",
-		Short: "Create alternate username, port number, password, and login cache information",
-		Long:  "Create alternate username, port number, password, and login cache information",
+		Use:     "create [command]",
+		Short:   "Create alternate username, port number, password, and login cache information",
+		Long:    "Create alternate username, port number, password, and login cache information",
+		Aliases: []string{"cre", "crt", "add"},
 	}
 	createCmd.AddCommand(users.NewUsersCommand())
 	createCmd.AddCommand(ports.NewPortsCommand())
