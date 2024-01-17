@@ -12,9 +12,10 @@ const createType = "caches"
 
 func NewCachesCommand() *cobra.Command {
 	cachesCmd := &cobra.Command{
-		Use:   "caches <cache>",
-		Short: "Create a alternate cache",
-		Long:  "Create a alternate cache",
+		Use:     "caches <cache>",
+		Short:   "Create a alternate cache",
+		Long:    "Create a alternate cache",
+		Aliases: []string{"cache"},
 		Run: func(cmd *cobra.Command, args []string) {
 			newIp, _ := cmd.Flags().GetString("ip")
 			newUser, _ := cmd.Flags().GetString("user")

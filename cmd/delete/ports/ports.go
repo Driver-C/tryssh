@@ -10,10 +10,11 @@ const deleteType = "ports"
 
 func NewPortsCommand() *cobra.Command {
 	portsCmd := &cobra.Command{
-		Use:   "ports <port>",
-		Args:  cobra.ExactArgs(1),
-		Short: "Delete a alternate port",
-		Long:  "Delete a alternate port",
+		Use:     "ports <port>",
+		Args:    cobra.ExactArgs(1),
+		Short:   "Delete a alternate port",
+		Long:    "Delete a alternate port",
+		Aliases: []string{"port", "po"},
 		Run: func(cmd *cobra.Command, args []string) {
 			port := args[0]
 			configuration := config.LoadConfig()

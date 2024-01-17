@@ -10,9 +10,10 @@ const getType = "users"
 
 func NewUsersCommand() *cobra.Command {
 	usersCmd := &cobra.Command{
-		Use:   "users <username>",
-		Short: "Get alternate usernames",
-		Long:  "Get alternate usernames",
+		Use:     "users <username>",
+		Short:   "Get alternate usernames",
+		Long:    "Get alternate usernames",
+		Aliases: []string{"user", "usr"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var username string
 			if len(args) > 0 {

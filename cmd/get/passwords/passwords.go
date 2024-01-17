@@ -10,9 +10,10 @@ const getType = "passwords"
 
 func NewPasswordsCommand() *cobra.Command {
 	passwordsCmd := &cobra.Command{
-		Use:   "passwords <password>",
-		Short: "Get alternate passwords",
-		Long:  "Get alternate passwords",
+		Use:     "passwords <password>",
+		Short:   "Get alternate passwords",
+		Long:    "Get alternate passwords",
+		Aliases: []string{"password", "pass", "pwd"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var password string
 			if len(args) > 0 {

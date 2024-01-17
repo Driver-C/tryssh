@@ -10,10 +10,11 @@ const createType = "users"
 
 func NewUsersCommand() *cobra.Command {
 	usersCmd := &cobra.Command{
-		Use:   "users <username>",
-		Args:  cobra.ExactArgs(1),
-		Short: "Create a alternate username",
-		Long:  "Create a alternate username",
+		Use:     "users <username>",
+		Args:    cobra.ExactArgs(1),
+		Short:   "Create a alternate username",
+		Long:    "Create a alternate username",
+		Aliases: []string{"user", "usr"},
 		Run: func(cmd *cobra.Command, args []string) {
 			username := args[0]
 			configuration := config.LoadConfig()
