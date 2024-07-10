@@ -18,6 +18,8 @@ const (
 	SSHKeyKeyword        = "SSH-KEY"
 )
 
+var keysMap = sync.Map{}
+
 type Connector interface {
 	Launch() bool
 	CreateConnection() (sshClient *ssh.Client, err error)
@@ -30,6 +32,7 @@ type SshConnector struct {
 	Port         string
 	User         string
 	Password     string
+	Key          string
 	SshTimeout   time.Duration
 	HostKeyMutex *sync.Mutex
 }
@@ -43,11 +46,30 @@ func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
 	if sc.HostKeyMutex == nil {
 		sc.HostKeyMutex = new(sync.Mutex)
 	}
+
+	var authMethods []ssh.AuthMethod
+	var privateKey []byte
+	if sc.Key != "" {
+		if _, ok := keysMap.Load(sc.Key); !ok {
+			if pk, status := utils.ReadFile(sc.Key); status {
+				keysMap.Store(sc.Key, pk)
+				privateKey = pk
+			}
+		} else {
+			pk, _ := keysMap.Load(sc.Key)
+			privateKey = pk.([]byte)
+		}
+		signer, err := ssh.ParsePrivateKey(privateKey)
+		if err == nil {
+			authMethods = append(authMethods, ssh.PublicKeys(signer))
+		} else {
+			utils.Logger.Errorln("Failed to parse private key: %v", err)
+		}
+	}
+	authMethods = append(authMethods, ssh.Password(sc.Password))
 	config = &ssh.ClientConfig{
-		User: sc.User,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(sc.Password),
-		},
+		User:            sc.User,
+		Auth:            authMethods,
 		HostKeyCallback: trustedHostKeyCallback(searchKeyFromAddress(sc.Ip), sc.Ip, sc.HostKeyMutex),
 		Timeout:         sc.SshTimeout,
 	}
@@ -95,6 +117,7 @@ func GetSshConnectorFromConfig(conf *config.ServerListConfig) *SshConnector {
 		Port:     conf.Port,
 		User:     conf.User,
 		Password: conf.Password,
+		Key:      conf.Key,
 	}
 }
 
@@ -105,6 +128,7 @@ func GetConfigFromSshConnector(tgt *SshConnector) *config.ServerListConfig {
 		Port:     tgt.Port,
 		User:     tgt.User,
 		Password: tgt.Password,
+		Key:      tgt.Key,
 	}
 }
 

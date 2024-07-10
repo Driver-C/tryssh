@@ -38,6 +38,7 @@ type MainConfig struct {
 		Ports     []string `yaml:"ports,flow"`
 		Users     []string `yaml:"users,flow"`
 		Passwords []string `yaml:"passwords,flow"`
+		Keys      []string `yaml:"keys,flow"`
 	} `yaml:"main"`
 	ServerLists []ServerListConfig `yaml:"serverList"`
 }
@@ -48,6 +49,7 @@ type ServerListConfig struct {
 	Port     string `yaml:"port"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
+	Key      string `yaml:"key"`
 	Alias    string `yaml:"alias"`
 }
 
@@ -122,7 +124,8 @@ func GenerateCombination(ip string, user string, conf *MainConfig) (combinations
 		users = utils.InterfaceSlice(conf.Main.Users)
 	}
 	passwords := utils.InterfaceSlice(conf.Main.Passwords)
+	keys := utils.InterfaceSlice(conf.Main.Keys)
 	// Generate combinations with immutable parameter order
-	combinations = cartesian.Iter(ips, ports, users, passwords)
+	combinations = cartesian.Iter(ips, ports, users, passwords, keys)
 	return
 }

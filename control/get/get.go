@@ -10,6 +10,7 @@ const (
 	typePorts     = "ports"
 	typePasswords = "passwords"
 	typeCaches    = "caches"
+	typeKeys      = "keys"
 )
 
 type Controller struct {
@@ -29,6 +30,9 @@ func (gc Controller) ExecuteGet() {
 	case typePasswords:
 		fmt.Println("INDEX	PASSWORD")
 		gc.searchAndPrint(gc.configuration.Main.Passwords)
+	case typeKeys:
+		fmt.Println("INDEX	KEY")
+		gc.searchAndPrint(gc.configuration.Main.Keys)
 	case typeCaches:
 		// gc.getContent is ipAddress
 		fmt.Println("INDEX	CACHE")
