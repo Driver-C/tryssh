@@ -19,5 +19,6 @@ func NewCreateCommand() *cobra.Command {
 	createCmd.AddCommand(ports.NewPortsCommand())
 	createCmd.AddCommand(passwords.NewPasswordsCommand())
 	createCmd.AddCommand(caches.NewCachesCommand())
+	createCmd.AddCommand(NewKeysCommand())
 	return createCmd
 }

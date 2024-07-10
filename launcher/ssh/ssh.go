@@ -25,6 +25,7 @@ func NewSshLaunchersByCombinations(combinations chan []interface{},
 			Port:       com[1].(string),
 			User:       com[2].(string),
 			Password:   com[3].(string),
+			Key:        com[4].(string),
 			SshTimeout: sshTimeout,
 		}})
 	}

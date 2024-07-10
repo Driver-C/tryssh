@@ -11,6 +11,7 @@ const (
 	typePorts     = "ports"
 	typePasswords = "passwords"
 	typeCaches    = "caches"
+	typeKeys      = "keys"
 )
 
 type CacheContent struct {
@@ -40,6 +41,10 @@ func (cc Controller) ExecuteCreate() {
 	case typePasswords:
 		cc.configuration.Main.Passwords = utils.RemoveDuplicate(
 			append(cc.configuration.Main.Passwords, cc.createContent))
+		cc.updateConfig()
+	case typeKeys:
+		cc.configuration.Main.Keys = utils.RemoveDuplicate(
+			append(cc.configuration.Main.Keys, cc.createContent))
 		cc.updateConfig()
 	case typeCaches:
 		cc.createCaches()

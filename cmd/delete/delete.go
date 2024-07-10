@@ -19,5 +19,6 @@ func NewDeleteCommand() *cobra.Command {
 	deleteCmd.AddCommand(ports.NewPortsCommand())
 	deleteCmd.AddCommand(passwords.NewPasswordsCommand())
 	deleteCmd.AddCommand(caches.NewCachesCommand())
+	deleteCmd.AddCommand(NewKeysCommand())
 	return deleteCmd
 }

@@ -10,6 +10,7 @@ const (
 	typePorts     = "ports"
 	typePasswords = "passwords"
 	typeCaches    = "caches"
+	typeKey       = "keys"
 )
 
 type Controller struct {
@@ -43,6 +44,14 @@ func (dc Controller) ExecuteDelete() {
 			dc.updateConfig()
 		} else {
 			utils.Logger.Warnf("No matching password: %s\n", dc.deleteContent)
+		}
+	case typeKey:
+		contents := dc.configuration.Main.Keys
+		if newContents := dc.searchAndDelete(contents); newContents != nil {
+			dc.configuration.Main.Keys = newContents
+			dc.updateConfig()
+		} else {
+			utils.Logger.Warnf("No matching key: %s\n", dc.deleteContent)
 		}
 	case typeCaches:
 		// dc.deleteContent is ipAddress
