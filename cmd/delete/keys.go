@@ -1,12 +1,10 @@
 package delete
 
 import (
-	"github.com/Driver-C/tryssh/config"
-	"github.com/Driver-C/tryssh/control/delete"
+	"github.com/Driver-C/tryssh/pkg/config"
+	"github.com/Driver-C/tryssh/pkg/control"
 	"github.com/spf13/cobra"
 )
-
-const deleteType = "keys"
 
 func NewKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -18,7 +16,7 @@ func NewKeysCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			keyPath := args[0]
 			configuration := config.LoadConfig()
-			ctl := delete.NewDeleteController(deleteType, keyPath, configuration)
+			ctl := control.NewDeleteController(control.TypeKeys, keyPath, configuration)
 			ctl.ExecuteDelete()
 		},
 	}

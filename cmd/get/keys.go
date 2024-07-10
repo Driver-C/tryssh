@@ -1,12 +1,10 @@
 package get
 
 import (
-	"github.com/Driver-C/tryssh/config"
-	"github.com/Driver-C/tryssh/control/get"
+	"github.com/Driver-C/tryssh/pkg/config"
+	"github.com/Driver-C/tryssh/pkg/control"
 	"github.com/spf13/cobra"
 )
-
-const getType = "keys"
 
 func NewKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -20,7 +18,7 @@ func NewKeysCommand() *cobra.Command {
 				keyPath = args[0]
 			}
 			configuration := config.LoadConfig()
-			ctl := get.NewGetController(getType, keyPath, configuration)
+			ctl := control.NewGetController(control.TypeKeys, keyPath, configuration)
 			ctl.ExecuteGet()
 		},
 	}

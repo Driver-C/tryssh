@@ -1,12 +1,10 @@
 package create
 
 import (
-	"github.com/Driver-C/tryssh/config"
-	"github.com/Driver-C/tryssh/control/create"
+	"github.com/Driver-C/tryssh/pkg/config"
+	"github.com/Driver-C/tryssh/pkg/control"
 	"github.com/spf13/cobra"
 )
-
-const createType = "keys"
 
 func NewKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -18,7 +16,7 @@ func NewKeysCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			keyPath := args[0]
 			configuration := config.LoadConfig()
-			ctl := create.NewCreateController(createType, keyPath, configuration)
+			ctl := control.NewCreateController(control.TypeKeys, keyPath, configuration)
 			ctl.ExecuteCreate()
 		},
 	}

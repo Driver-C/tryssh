@@ -1,8 +1,8 @@
 package scp
 
 import (
-	"github.com/Driver-C/tryssh/config"
-	"github.com/Driver-C/tryssh/control/scp"
+	"github.com/Driver-C/tryssh/pkg/config"
+	"github.com/Driver-C/tryssh/pkg/control"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -39,7 +39,7 @@ func NewScpCommand() *cobra.Command {
 			timeout, _ := cmd.Flags().GetDuration("timeout")
 			recursive, _ := cmd.Flags().GetBool("recursive")
 			configuration := config.LoadConfig()
-			scpControl := scp.NewScpController(source, destination, configuration)
+			scpControl := control.NewScpController(source, destination, configuration)
 			scpControl.TryCopy(user, concurrencyOpt, recursive, timeout)
 		},
 	}

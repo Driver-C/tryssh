@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/Driver-C/tryssh/cmd"
-	"github.com/Driver-C/tryssh/utils"
+	"github.com/Driver-C/tryssh/pkg/utils"
 )
 
 func main() {
