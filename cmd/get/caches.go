@@ -7,10 +7,10 @@ import (
 )
 
 func NewCachesCommand() *cobra.Command {
-	cachesCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "caches <ipAddress>",
-		Short:   "Get alternate caches by ipAddress",
-		Long:    "Get alternate caches by ipAddress",
+		Short:   "Get alternative caches by ipAddress",
+		Long:    "Get alternative caches by ipAddress",
 		Aliases: []string{"cache"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var ipAddress string
@@ -18,9 +18,9 @@ func NewCachesCommand() *cobra.Command {
 				ipAddress = args[0]
 			}
 			configuration := config.LoadConfig()
-			getCtl := control.NewGetController(control.TypeCaches, ipAddress, configuration)
-			getCtl.ExecuteGet()
+			controller := control.NewGetController(control.TypeCaches, ipAddress, configuration)
+			controller.ExecuteGet()
 		},
 	}
-	return cachesCmd
+	return cmd
 }

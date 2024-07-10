@@ -13,7 +13,7 @@ const (
 )
 
 func NewPruneCommand() *cobra.Command {
-	pruneCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "prune",
 		Short: "Check if all current caches are available and clear the ones that are not available",
 		Long:  "Check if all current caches are available and clear the ones that are not available",
@@ -22,16 +22,16 @@ func NewPruneCommand() *cobra.Command {
 			concurrencyOpt, _ := cmd.Flags().GetInt("concurrency")
 			timeout, _ := cmd.Flags().GetDuration("timeout")
 			configuration := config.LoadConfig()
-			pruneControl := control.NewPruneController(configuration, auto, timeout, concurrencyOpt)
-			pruneControl.PruneCaches()
+			controller := control.NewPruneController(configuration, auto, timeout, concurrencyOpt)
+			controller.PruneCaches()
 		},
 	}
-	pruneCmd.Flags().BoolP(
+	cmd.Flags().BoolP(
 		"auto", "a", false, "Automatically perform concurrent cache optimization without"+
 			" asking for confirmation to delete")
-	pruneCmd.Flags().IntP(
+	cmd.Flags().IntP(
 		"concurrency", "c", concurrency, "Number of multiple requests to perform at a time")
-	pruneCmd.Flags().DurationP("timeout", "t", sshTimeout,
+	cmd.Flags().DurationP("timeout", "t", sshTimeout,
 		"SSH timeout when attempting to log in. It can be \"1s\" or \"1m\" or other duration")
-	return pruneCmd
+	return cmd
 }

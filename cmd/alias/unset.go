@@ -7,7 +7,7 @@ import (
 )
 
 func NewAliasUnsetCommand() *cobra.Command {
-	aliasUnsetCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "unset <alias>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Unset the alias",
@@ -15,9 +15,9 @@ func NewAliasUnsetCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			aliasContent := args[0]
 			configuration := config.LoadConfig()
-			aliasController := control.NewAliasController("", configuration, aliasContent)
-			aliasController.UnsetAlias()
+			controller := control.NewAliasController("", configuration, aliasContent)
+			controller.UnsetAlias()
 		},
 	}
-	return aliasUnsetCmd
+	return cmd
 }

@@ -12,7 +12,7 @@ var (
 )
 
 func NewVersionCommand() *cobra.Command {
-	versionCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the client version information for the current context",
 		Long:  "Print the client version information for the current context",
@@ -30,5 +30,5 @@ func NewVersionCommand() *cobra.Command {
 			fmt.Printf(versionContent)
 		},
 	}
-	return versionCmd
+	return cmd
 }

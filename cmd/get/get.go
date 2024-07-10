@@ -5,15 +5,15 @@ import (
 )
 
 func NewGetCommand() *cobra.Command {
-	getCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "get [command]",
-		Short: "Get alternate username, port number, password, and login cache information",
-		Long:  "Get alternate username, port number, password, and login cache information",
+		Short: "Get alternative username, port number, password, and login cache information",
+		Long:  "Get alternative username, port number, password, and login cache information",
 	}
-	getCmd.AddCommand(NewUsersCommand())
-	getCmd.AddCommand(NewPortsCommand())
-	getCmd.AddCommand(NewPasswordsCommand())
-	getCmd.AddCommand(NewCachesCommand())
-	getCmd.AddCommand(NewKeysCommand())
-	return getCmd
+	cmd.AddCommand(NewUsersCommand())
+	cmd.AddCommand(NewPortsCommand())
+	cmd.AddCommand(NewPasswordsCommand())
+	cmd.AddCommand(NewCachesCommand())
+	cmd.AddCommand(NewKeysCommand())
+	return cmd
 }

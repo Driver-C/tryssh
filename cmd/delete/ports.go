@@ -7,18 +7,18 @@ import (
 )
 
 func NewPortsCommand() *cobra.Command {
-	portsCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "ports <port>",
 		Args:    cobra.ExactArgs(1),
-		Short:   "Delete a alternate port",
-		Long:    "Delete a alternate port",
+		Short:   "Delete an alternative port",
+		Long:    "Delete an alternative port",
 		Aliases: []string{"port", "po"},
 		Run: func(cmd *cobra.Command, args []string) {
 			port := args[0]
 			configuration := config.LoadConfig()
-			deleteCtl := control.NewDeleteController(control.TypePorts, port, configuration)
-			deleteCtl.ExecuteDelete()
+			controller := control.NewDeleteController(control.TypePorts, port, configuration)
+			controller.ExecuteDelete()
 		},
 	}
-	return portsCmd
+	return cmd
 }

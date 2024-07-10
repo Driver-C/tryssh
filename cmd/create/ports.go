@@ -7,18 +7,18 @@ import (
 )
 
 func NewPortsCommand() *cobra.Command {
-	portsCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "ports <port>",
 		Args:    cobra.ExactArgs(1),
-		Short:   "Create a alternate port",
-		Long:    "Create a alternate port",
+		Short:   "Create an alternative port",
+		Long:    "Create an alternative port",
 		Aliases: []string{"port", "po"},
 		Run: func(cmd *cobra.Command, args []string) {
 			port := args[0]
 			configuration := config.LoadConfig()
-			createCtl := control.NewCreateController(control.TypePorts, port, configuration)
-			createCtl.ExecuteCreate()
+			controller := control.NewCreateController(control.TypePorts, port, configuration)
+			controller.ExecuteCreate()
 		},
 	}
-	return portsCmd
+	return cmd
 }

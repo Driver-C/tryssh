@@ -7,10 +7,10 @@ import (
 )
 
 func NewPasswordsCommand() *cobra.Command {
-	passwordsCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "passwords <password>",
-		Short:   "Get alternate passwords",
-		Long:    "Get alternate passwords",
+		Short:   "Get alternative passwords",
+		Long:    "Get alternative passwords",
 		Aliases: []string{"password", "pass", "pwd"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var password string
@@ -18,9 +18,9 @@ func NewPasswordsCommand() *cobra.Command {
 				password = args[0]
 			}
 			configuration := config.LoadConfig()
-			getCtl := control.NewGetController(control.TypePasswords, password, configuration)
-			getCtl.ExecuteGet()
+			controller := control.NewGetController(control.TypePasswords, password, configuration)
+			controller.ExecuteGet()
 		},
 	}
-	return passwordsCmd
+	return cmd
 }

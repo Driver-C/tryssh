@@ -7,18 +7,18 @@ import (
 )
 
 func NewUsersCommand() *cobra.Command {
-	usersCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "users <username>",
 		Args:    cobra.ExactArgs(1),
-		Short:   "Create a alternate username",
-		Long:    "Create a alternate username",
+		Short:   "Create an alternative username",
+		Long:    "Create an alternative username",
 		Aliases: []string{"user", "usr"},
 		Run: func(cmd *cobra.Command, args []string) {
 			username := args[0]
 			configuration := config.LoadConfig()
-			createCtl := control.NewCreateController(control.TypeUsers, username, configuration)
-			createCtl.ExecuteCreate()
+			controller := control.NewCreateController(control.TypeUsers, username, configuration)
+			controller.ExecuteCreate()
 		},
 	}
-	return usersCmd
+	return cmd
 }

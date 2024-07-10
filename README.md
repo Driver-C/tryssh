@@ -31,12 +31,11 @@ Currently, the project only maintains the `master` branch for releasing stable v
 
 ## TODO list
 
-Rankings do not differentiate priority levels.
+Rankings do not differentiate priority levels. Delete the corresponding entry after completion of the following content.
 
 1. File transfer supports wildcards
 2. Completing unit test code
 3. Security-related features, such as encrypting configuration files, hiding sensitive information from plain text display, and switching to interactive password input
-4. Support for key-based authentication
 
 ## Quick Start
 
@@ -76,9 +75,9 @@ Usage:
 
 Available Commands:
   alias       Set, unset, and list aliases, aliases can be used to log in to servers
-  create      Create alternate username, port number, password, and login cache information
-  delete      Delete alternate username, port number, password, and login cache information
-  get         Get alternate username, port number, password, and login cache information
+  create      Create alternative username, port number, password, and login cache information
+  delete      Delete alternative username, port number, password, and login cache information
+  get         Get alternative username, port number, password, and login cache information
   help        Help about any command
   prune       Check if all current caches are available and clear the ones that are not available
   scp         Upload/Download file to/from the server through SSH protocol
@@ -99,16 +98,17 @@ The `"create"` command of `tryssh` is used to create various configurations for 
 
 ```
 $ tryssh create -h
-Create alternate username, port number, password, and login cache information
+Create alternative username, port number, password, and login cache information
 
 Usage:
   tryssh create [command]
 
 Available Commands:
-  caches      Create a alternate cache
-  passwords   Create a alternate password
-  ports       Create a alternate port
-  users       Create a alternate username
+  caches      Create an alternative cache
+  keys        Create a alternative key file path
+  passwords   Create an alternative password
+  ports       Create an alternative port
+  users       Create an alternative username
 
 Flags:
   -h, --help   help for create
@@ -137,16 +137,17 @@ The `"delete"` command of `tryssh` is used to delete various configurations for 
 
 ```
 $ tryssh delete -h
-Delete alternate username, port number, password, and login cache information
+Delete alternative username, port number, password, and login cache information
 
 Usage:
   tryssh delete [command]
 
 Available Commands:
-  caches      Delete a alternate cache
-  passwords   Delete a alternate password
-  ports       Delete a alternate port
-  users       Delete a alternate username
+  caches      Delete an alternative cache
+  keys        Delete a alternative key file path
+  passwords   Delete an alternative password
+  ports       Delete an alternative port
+  users       Delete an alternative username
 
 Flags:
   -h, --help   help for delete
@@ -178,16 +179,16 @@ The `"get"` command of `tryssh` is used to view various configurations for passw
 
 ```
 $ tryssh get -h
-Get alternate username, port number, password, and login cache information
+Get alternative username, port number, password, and login cache information
 
 Usage:
   tryssh get [command]
 
 Available Commands:
-  caches      Get alternate caches by ipAddress
-  passwords   Get alternate passwords
-  ports       Get alternate ports
-  users       Get alternate usernames
+  caches      Get alternative caches by ipAddress
+  passwords   Get alternative passwords
+  ports       Get alternative ports
+  users       Get alternative usernames
 
 Flags:
   -h, --help   help for get
