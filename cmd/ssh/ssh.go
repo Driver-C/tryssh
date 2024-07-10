@@ -1,8 +1,8 @@
 package ssh
 
 import (
-	"github.com/Driver-C/tryssh/config"
-	"github.com/Driver-C/tryssh/control/ssh"
+	"github.com/Driver-C/tryssh/pkg/config"
+	"github.com/Driver-C/tryssh/pkg/control"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -24,7 +24,7 @@ func NewSshCommand() *cobra.Command {
 			timeout, _ := cmd.Flags().GetDuration("timeout")
 			targetIp := args[0]
 			configuration := config.LoadConfig()
-			sshControl := ssh.NewSshController(targetIp, configuration)
+			sshControl := control.NewSshController(targetIp, configuration)
 			sshControl.TryLogin(user, concurrencyOpt, timeout)
 		},
 	}

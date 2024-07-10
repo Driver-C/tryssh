@@ -1,8 +1,8 @@
 package prune
 
 import (
-	"github.com/Driver-C/tryssh/config"
-	"github.com/Driver-C/tryssh/control/prune"
+	"github.com/Driver-C/tryssh/pkg/config"
+	"github.com/Driver-C/tryssh/pkg/control"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -22,7 +22,7 @@ func NewPruneCommand() *cobra.Command {
 			concurrencyOpt, _ := cmd.Flags().GetInt("concurrency")
 			timeout, _ := cmd.Flags().GetDuration("timeout")
 			configuration := config.LoadConfig()
-			pruneControl := prune.NewPruneController(configuration, auto, timeout, concurrencyOpt)
+			pruneControl := control.NewPruneController(configuration, auto, timeout, concurrencyOpt)
 			pruneControl.PruneCaches()
 		},
 	}

@@ -1,4 +1,5 @@
-PACKAGE := github.com/Driver-C/tryssh/cmd/version
+BIN_NAME := "tryssh"
+CMD_PACKAGE := github.com/Driver-C/tryssh/cmd/version
 GO_VERSION := $(shell go version | awk '{print $$3}')
 BUILD_TIME := $(shell date -u '+%Y-%m-%d %H:%M:%S')
 LDFLAGS :=
@@ -12,16 +13,14 @@ ifdef VERSION
 endif
 BINARY_VERSION ?= $(GIT_TAG)
 
-# Only set Version if building a tag or VERSION is set
-ifneq ($(BINARY_VERSION),)
-	LDFLAGS += -X '$(PACKAGE).TrysshVersion=$(BINARY_VERSION)'
-else
+ifneq ($(BINARY_VERSION),"")
 	# If cannot find any information that can be used as a version number, change it to debug
 	BINARY_VERSION = "debug"
 endif
 
-LDFLAGS += -X '$(PACKAGE).BuildGoVersion=$(GO_VERSION)'
-LDFLAGS += -X '$(PACKAGE).BuildTime=$(BUILD_TIME) UTC'
+LDFLAGS += -X '$(CMD_PACKAGE).Version=$(BINARY_VERSION)'
+LDFLAGS += -X '$(CMD_PACKAGE).BuildGoVersion=$(GO_VERSION)'
+LDFLAGS += -X '$(CMD_PACKAGE).BuildTime=$(BUILD_TIME) UTC'
 
 .PHONY: default
 default: build
@@ -37,6 +36,7 @@ tidy: clean
 .PHONY: clean
 clean:
 	@go clean
+	@rm -f ./$(BIN_NAME)
 	@rm -rf ./release
 
 .PHONY: multi
@@ -45,15 +45,15 @@ multi: tidy
 		os=$(shell echo "$(n)" | cut -d : -f 1);\
 		arch=$(shell echo "$(n)" | cut -d : -f 2);\
 		target_suffix=$(BINARY_VERSION)-$${os}-$${arch};\
-		bin_name="tryssh";\
-		if [ $${os} = "windows" ]; then bin_name="tryssh.exe"; fi;\
+		bin_name="$(BIN_NAME)";\
+		if [ $${os} = "windows" ]; then bin_name="$(BIN_NAME).exe"; fi;\
 		echo "[==> Build $${os}-$${arch} start... <==]";\
 		mkdir -p ./release/$${os}-$${arch};\
 		cp ./LICENSE ./release/$${os}-$${arch}/;\
 		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -v -trimpath -ldflags "$(LDFLAGS)" \
 		-o ./release/$${os}-$${arch}/$${bin_name};\
 		cd ./release;\
-		zip -rq tryssh-$${target_suffix}.zip $${os}-$${arch};\
+		zip -rq $(BIN_NAME)-$${target_suffix}.zip $${os}-$${arch};\
 		rm -rf $${os}-$${arch};\
 		cd ..;\
 		echo "[==> Build $${os}-$${arch} done <==]";\

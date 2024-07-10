@@ -1,10 +1,6 @@
 package delete
 
 import (
-	"github.com/Driver-C/tryssh/cmd/delete/caches"
-	"github.com/Driver-C/tryssh/cmd/delete/passwords"
-	"github.com/Driver-C/tryssh/cmd/delete/ports"
-	"github.com/Driver-C/tryssh/cmd/delete/users"
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +11,10 @@ func NewDeleteCommand() *cobra.Command {
 		Long:    "Delete alternate username, port number, password, and login cache information",
 		Aliases: []string{"del"},
 	}
-	deleteCmd.AddCommand(users.NewUsersCommand())
-	deleteCmd.AddCommand(ports.NewPortsCommand())
-	deleteCmd.AddCommand(passwords.NewPasswordsCommand())
-	deleteCmd.AddCommand(caches.NewCachesCommand())
+	deleteCmd.AddCommand(NewUsersCommand())
+	deleteCmd.AddCommand(NewPortsCommand())
+	deleteCmd.AddCommand(NewPasswordsCommand())
+	deleteCmd.AddCommand(NewCachesCommand())
 	deleteCmd.AddCommand(NewKeysCommand())
 	return deleteCmd
 }
