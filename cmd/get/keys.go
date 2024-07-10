@@ -9,8 +9,8 @@ import (
 func NewKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "keys <keyFilePath>",
-		Short:   "Get alternate key file path",
-		Long:    "Get alternate key file path",
+		Short:   "Get alternative key file path",
+		Long:    "Get alternative key file path",
 		Aliases: []string{"key"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var keyPath string
@@ -18,8 +18,8 @@ func NewKeysCommand() *cobra.Command {
 				keyPath = args[0]
 			}
 			configuration := config.LoadConfig()
-			ctl := control.NewGetController(control.TypeKeys, keyPath, configuration)
-			ctl.ExecuteGet()
+			controller := control.NewGetController(control.TypeKeys, keyPath, configuration)
+			controller.ExecuteGet()
 		},
 	}
 	return cmd

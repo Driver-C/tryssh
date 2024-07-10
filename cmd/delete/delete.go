@@ -5,16 +5,16 @@ import (
 )
 
 func NewDeleteCommand() *cobra.Command {
-	deleteCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "delete [command]",
-		Short:   "Delete alternate username, port number, password, and login cache information",
-		Long:    "Delete alternate username, port number, password, and login cache information",
+		Short:   "Delete alternative username, port number, password, and login cache information",
+		Long:    "Delete alternative username, port number, password, and login cache information",
 		Aliases: []string{"del"},
 	}
-	deleteCmd.AddCommand(NewUsersCommand())
-	deleteCmd.AddCommand(NewPortsCommand())
-	deleteCmd.AddCommand(NewPasswordsCommand())
-	deleteCmd.AddCommand(NewCachesCommand())
-	deleteCmd.AddCommand(NewKeysCommand())
-	return deleteCmd
+	cmd.AddCommand(NewUsersCommand())
+	cmd.AddCommand(NewPortsCommand())
+	cmd.AddCommand(NewPasswordsCommand())
+	cmd.AddCommand(NewCachesCommand())
+	cmd.AddCommand(NewKeysCommand())
+	return cmd
 }

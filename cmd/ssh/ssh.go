@@ -13,7 +13,7 @@ const (
 )
 
 func NewSshCommand() *cobra.Command {
-	sshCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "ssh <ipAddress>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Connect to the server through SSH protocol",
@@ -24,16 +24,16 @@ func NewSshCommand() *cobra.Command {
 			timeout, _ := cmd.Flags().GetDuration("timeout")
 			targetIp := args[0]
 			configuration := config.LoadConfig()
-			sshControl := control.NewSshController(targetIp, configuration)
-			sshControl.TryLogin(user, concurrencyOpt, timeout)
+			controller := control.NewSshController(targetIp, configuration)
+			controller.TryLogin(user, concurrencyOpt, timeout)
 		},
 	}
-	sshCmd.Flags().StringP(
+	cmd.Flags().StringP(
 		"user", "u", "", "Specify a username to attempt to login to the server,\n"+
 			"if the specified username does not exist, try logging in using that username")
-	sshCmd.Flags().IntP(
+	cmd.Flags().IntP(
 		"concurrency", "c", concurrency, "Number of multiple requests to perform at a time")
-	sshCmd.Flags().DurationP("timeout", "t", sshTimeout,
+	cmd.Flags().DurationP("timeout", "t", sshTimeout,
 		"SSH timeout when attempting to log in. It can be \"1s\" or \"1m\" or other duration")
-	return sshCmd
+	return cmd
 }

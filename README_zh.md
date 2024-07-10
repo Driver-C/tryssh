@@ -31,12 +31,11 @@
 
 ## 待做清单
 
-排名不区分优先级
+排名不区分优先级，以下内容在完成后删除对应条目
 
 1. 传输文件支持通配符
 2. 完成单元测试代码
 3. 安全相关功能，配置文件加密、隐藏明文显示的敏感信息、密码输入应改为交互式等
-4. 支持秘钥登陆
 
 ## 快速开始
 
@@ -76,9 +75,9 @@ Usage:
 
 Available Commands:
   alias       Set, unset, and list aliases, aliases can be used to log in to servers
-  create      Create alternate username, port number, password, and login cache information
-  delete      Delete alternate username, port number, password, and login cache information
-  get         Get alternate username, port number, password, and login cache information
+  create      Create alternative username, port number, password, and login cache information
+  delete      Delete alternative username, port number, password, and login cache information
+  get         Get alternative username, port number, password, and login cache information
   help        Help about any command
   prune       Check if all current caches are available and clear the ones that are not available
   scp         Upload/Download file to/from the server through SSH protocol
@@ -98,16 +97,17 @@ tryssh 的`create`命令用于创建用来猜密码登陆的各类配置，比�
 #### create 帮助信息
 ```
 $ tryssh create -h
-Create alternate username, port number, password, and login cache information
+Create alternative username, port number, password, and login cache information
 
 Usage:
   tryssh create [command]
 
 Available Commands:
-  caches      Create a alternate cache
-  passwords   Create a alternate password
-  ports       Create a alternate port
-  users       Create a alternate username
+  caches      Create an alternative cache
+  keys        Create a alternative key file path
+  passwords   Create an alternative password
+  ports       Create an alternative port
+  users       Create an alternative username
 
 Flags:
   -h, --help   help for create
@@ -136,16 +136,16 @@ tryssh 的`delete`命令用于删除用来猜密码登陆的各类配置，比�
 
 ```
 $ tryssh delete -h
-Delete alternate username, port number, password, and login cache information
+Delete alternative username, port number, password, and login cache information
 
 Usage:
   tryssh delete [command]
 
 Available Commands:
-  caches      Delete a alternate cache
-  passwords   Delete a alternate password
-  ports       Delete a alternate port
-  users       Delete a alternate username
+  caches      Delete an alternative cache
+  passwords   Delete an alternative password
+  ports       Delete an alternative port
+  users       Delete an alternative username
 
 Flags:
   -h, --help   help for delete
@@ -177,16 +177,17 @@ tryssh 的`get`命令用于查看用来猜密码登陆的各类配置，比如�
 
 ```
 $ tryssh get -h
-Get alternate username, port number, password, and login cache information
+Get alternative username, port number, password, and login cache information
 
 Usage:
   tryssh get [command]
 
 Available Commands:
-  caches      Get alternate caches by ipAddress
-  passwords   Get alternate passwords
-  ports       Get alternate ports
-  users       Get alternate usernames
+  caches      Get alternative caches by ipAddress
+  keys        Delete a alternative key file path
+  passwords   Get alternative passwords
+  ports       Get alternative ports
+  users       Get alternative usernames
 
 Flags:
   -h, --help   help for get

@@ -7,10 +7,10 @@ import (
 )
 
 func NewPortsCommand() *cobra.Command {
-	portsCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "ports <port>",
-		Short:   "Get alternate ports",
-		Long:    "Get alternate ports",
+		Short:   "Get alternative ports",
+		Long:    "Get alternative ports",
 		Aliases: []string{"port", "po"},
 		Run: func(cmd *cobra.Command, args []string) {
 			var port string
@@ -18,9 +18,9 @@ func NewPortsCommand() *cobra.Command {
 				port = args[0]
 			}
 			configuration := config.LoadConfig()
-			getCtl := control.NewGetController(control.TypePorts, port, configuration)
-			getCtl.ExecuteGet()
+			controller := control.NewGetController(control.TypePorts, port, configuration)
+			controller.ExecuteGet()
 		},
 	}
-	return portsCmd
+	return cmd
 }

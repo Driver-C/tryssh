@@ -10,14 +10,14 @@ func NewKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "keys <keyFilePath>",
 		Args:    cobra.ExactArgs(1),
-		Short:   "Create a alternate key file path",
-		Long:    "Create a alternate key file path",
+		Short:   "Create an alternative key file path",
+		Long:    "Create an alternative key file path",
 		Aliases: []string{"key"},
 		Run: func(cmd *cobra.Command, args []string) {
 			keyPath := args[0]
 			configuration := config.LoadConfig()
-			ctl := control.NewCreateController(control.TypeKeys, keyPath, configuration)
-			ctl.ExecuteCreate()
+			controller := control.NewCreateController(control.TypeKeys, keyPath, configuration)
+			controller.ExecuteCreate()
 		},
 	}
 	return cmd

@@ -9,10 +9,10 @@ import (
 )
 
 func NewCachesCommand() *cobra.Command {
-	cachesCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "caches <cache>",
-		Short:   "Create a alternate cache",
-		Long:    "Create a alternate cache",
+		Short:   "Create an alternative cache",
+		Long:    "Create an alternative cache",
 		Aliases: []string{"cache"},
 		Run: func(cmd *cobra.Command, args []string) {
 			newIp, _ := cmd.Flags().GetString("ip")
@@ -33,31 +33,31 @@ func NewCachesCommand() *cobra.Command {
 				return
 			}
 			configuration := config.LoadConfig()
-			createCtl := control.NewCreateController(control.TypeCaches, string(contentJson), configuration)
-			createCtl.ExecuteCreate()
+			controller := control.NewCreateController(control.TypeCaches, string(contentJson), configuration)
+			controller.ExecuteCreate()
 		},
 	}
-	cachesCmd.Flags().StringP("ip", "i", "", "The ipaddress of the cache to be added")
-	cachesCmd.Flags().StringP("user", "u", "", "The username of the cache to be added")
-	cachesCmd.Flags().StringP("port", "P", "", "The port of the cache to be added")
-	cachesCmd.Flags().StringP("pwd", "p", "", "The password of the cache to be added")
-	cachesCmd.Flags().StringP("alias", "a", "", "The alias of the cache to be added")
+	cmd.Flags().StringP("ip", "i", "", "The ipaddress of the cache to be added")
+	cmd.Flags().StringP("user", "u", "", "The username of the cache to be added")
+	cmd.Flags().StringP("port", "P", "", "The port of the cache to be added")
+	cmd.Flags().StringP("pwd", "p", "", "The password of the cache to be added")
+	cmd.Flags().StringP("alias", "a", "", "The alias of the cache to be added")
 
-	if err := cachesCmd.MarkFlagRequired("ip"); err != nil {
+	if err := cmd.MarkFlagRequired("ip"); err != nil {
 		utils.Logger.Errorln("Flag: ip must be set.")
 		return nil
 	}
-	if err := cachesCmd.MarkFlagRequired("user"); err != nil {
+	if err := cmd.MarkFlagRequired("user"); err != nil {
 		utils.Logger.Errorln("Flag: user must be set.")
 		return nil
 	}
-	if err := cachesCmd.MarkFlagRequired("port"); err != nil {
+	if err := cmd.MarkFlagRequired("port"); err != nil {
 		utils.Logger.Errorln("Flag: port must be set.")
 		return nil
 	}
-	if err := cachesCmd.MarkFlagRequired("pwd"); err != nil {
+	if err := cmd.MarkFlagRequired("pwd"); err != nil {
 		utils.Logger.Errorln("Flag: password must be set.")
 		return nil
 	}
-	return cachesCmd
+	return cmd
 }

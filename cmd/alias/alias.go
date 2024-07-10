@@ -5,13 +5,13 @@ import (
 )
 
 func NewAliasCommand() *cobra.Command {
-	aliasCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "alias <subCommand> [flags]",
 		Short: "Set, unset, and list aliases, aliases can be used to log in to servers",
 		Long:  "Set, unset, and list aliases, aliases can be used to log in to servers",
 	}
-	aliasCmd.AddCommand(NewAliasListCommand())
-	aliasCmd.AddCommand(NewAliasSetCommand())
-	aliasCmd.AddCommand(NewAliasUnsetCommand())
-	return aliasCmd
+	cmd.AddCommand(NewAliasListCommand())
+	cmd.AddCommand(NewAliasSetCommand())
+	cmd.AddCommand(NewAliasUnsetCommand())
+	return cmd
 }

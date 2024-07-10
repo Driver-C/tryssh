@@ -7,7 +7,7 @@ import (
 )
 
 func NewAliasSetCommand() *cobra.Command {
-	aliasSetCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "set <alias> [flags]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Set an alias for the specified server address",
@@ -16,15 +16,15 @@ func NewAliasSetCommand() *cobra.Command {
 			aliasContent := args[0]
 			targetAddress, _ := cmd.Flags().GetString("target")
 			configuration := config.LoadConfig()
-			aliasController := control.NewAliasController(targetAddress, configuration, aliasContent)
-			aliasController.SetAlias()
+			controller := control.NewAliasController(targetAddress, configuration, aliasContent)
+			controller.SetAlias()
 		},
 	}
-	aliasSetCmd.Flags().StringP(
+	cmd.Flags().StringP(
 		"target", "t", "", "Set the alias for the target server address")
-	err := aliasSetCmd.MarkFlagRequired("target")
+	err := cmd.MarkFlagRequired("target")
 	if err != nil {
 		return nil
 	}
-	return aliasSetCmd
+	return cmd
 }
