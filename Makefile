@@ -13,9 +13,9 @@ ifdef VERSION
 endif
 BINARY_VERSION ?= $(GIT_TAG)
 
-ifneq ($(BINARY_VERSION),"")
+ifeq ($(BINARY_VERSION),)
 	# If cannot find any information that can be used as a version number, change it to debug
-	BINARY_VERSION = "debug"
+	BINARY_VERSION := "debug"
 endif
 
 LDFLAGS += -X '$(CMD_PACKAGE).Version=$(BINARY_VERSION)'
