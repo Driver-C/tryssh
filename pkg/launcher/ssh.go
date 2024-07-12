@@ -37,10 +37,7 @@ func (h *SshLauncher) dialServer() (res bool) {
 	if err == nil {
 		utils.Logger.Infoln("[ LOGIN SUCCESSFUL ]\n")
 		utils.Logger.Infoln("User:", sshClient.User())
-		utils.Logger.Infoln("Password:", h.Password)
 		utils.Logger.Infoln("Port:", h.Port)
-		utils.Logger.Infoln("Ssh Server Version:", string(sshClient.ServerVersion()))
-		utils.Logger.Infof("Ssh Client Version: %s\n\n", string(sshClient.ClientVersion()))
 		res = true
 		h.createTerminal(sshClient)
 	} else {

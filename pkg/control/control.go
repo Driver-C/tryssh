@@ -3,6 +3,7 @@ package control
 import (
 	"context"
 	"github.com/Driver-C/tryssh/pkg/launcher"
+	"github.com/cheggaaa/pb/v3"
 	"sync"
 	"time"
 )
@@ -17,8 +18,10 @@ const (
 )
 
 func ConcurrencyTryToConnect(concurrency int, connectors []launcher.Connector) []launcher.Connector {
-	var hitConnectors []launcher.Connector
-	var mutex sync.Mutex
+	hitConnectors := make([]launcher.Connector, 0)
+	mutex := new(sync.Mutex)
+	bar := pb.StartNew(len(connectors))
+	bar.Set("prefix", "Attempting:")
 	// If the number of connectors is less than the set concurrency, change the concurrency to the number of connectors
 	if concurrency > len(connectors) {
 		concurrency = len(connectors)
@@ -56,13 +59,16 @@ func ConcurrencyTryToConnect(concurrency int, connectors []launcher.Connector) [
 						mutex.Lock()
 						hitConnectors = append(hitConnectors, connector)
 						mutex.Unlock()
+						bar.Finish()
 						cancelFunc()
 					}
+					bar.Increment()
 				}
 			}
-		}(ctx, cancelFunc, connectorsChan, &wg, &mutex)
+		}(ctx, cancelFunc, connectorsChan, &wg, mutex)
 	}
 	wg.Wait()
+	bar.Finish()
 	cancelFunc()
 	return hitConnectors
 }

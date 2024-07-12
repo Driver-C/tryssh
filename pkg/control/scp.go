@@ -84,7 +84,7 @@ func (cc *ScpController) tryCopyWithoutCache(user string) {
 		connectors[i] = l
 	}
 	hitLaunchers := ConcurrencyTryToConnect(cc.concurrency, connectors)
-	if hitLaunchers != nil {
+	if len(hitLaunchers) > 0 {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
 		hitLauncher := hitLaunchers[0].(*launcher.ScpLauncher)
 		// The new server cache information

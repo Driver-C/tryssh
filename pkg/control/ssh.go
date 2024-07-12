@@ -56,7 +56,7 @@ func (sc *SshController) tryLoginWithoutCache(user string) {
 		connectors[i] = l
 	}
 	hitLaunchers := ConcurrencyTryToConnect(sc.concurrency, connectors)
-	if hitLaunchers != nil {
+	if len(hitLaunchers) > 0 {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
 		hitLauncher := hitLaunchers[0].(*launcher.SshLauncher)
 		// The new server cache information

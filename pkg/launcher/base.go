@@ -81,11 +81,7 @@ func (sc *SshConnector) CreateConnection() (sshClient *ssh.Client, err error) {
 	if err != nil {
 		if strings.Contains(err.Error(), SSHKeyKeyword) {
 			// If it's a public key verification issue, just exit
-			utils.Logger.Fatalf("Unable to connect: %s@%s, Password:%s Cause: %s\n",
-				sc.User, addr, sc.Password, err.Error())
-		} else {
-			utils.Logger.Warnf("Unable to connect: %s@%s, Password:%s Cause: %s\n",
-				sc.User, addr, sc.Password, err.Error())
+			utils.Logger.Fatalf("Unable to connect: %s Cause: %s\n", addr, err.Error())
 		}
 	}
 	return
