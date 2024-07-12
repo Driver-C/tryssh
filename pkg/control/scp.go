@@ -1,12 +1,10 @@
 package control
 
 import (
-	"context"
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/launcher"
 	"github.com/Driver-C/tryssh/pkg/utils"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -79,12 +77,18 @@ func (cc *ScpController) tryCopyWithCache(user string, targetServer *config.Serv
 
 func (cc *ScpController) tryCopyWithoutCache(user string) {
 	combinations := config.GenerateCombination(cc.destIp, user, cc.configuration)
-	launchers := launcher.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination, cc.recursive, cc.sshTimeout)
-	hitLaunchers := concurrencyScpTryToConnect(cc.concurrency, launchers)
+	launchers := launcher.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination,
+		cc.recursive, cc.sshTimeout)
+	connectors := make([]launcher.Connector, len(launchers))
+	for i, l := range launchers {
+		connectors[i] = l
+	}
+	hitLaunchers := ConcurrencyTryToConnect(cc.concurrency, connectors)
 	if hitLaunchers != nil {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
+		hitLauncher := hitLaunchers[0].(*launcher.ScpLauncher)
 		// The new server cache information
-		newServerCache := launcher.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
+		newServerCache := launcher.GetConfigFromSshConnector(&hitLauncher.SshConnector)
 		// Determine if the login attempt was successful after the old cache login failed.
 		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
 		if cc.cacheIsFound {
@@ -100,10 +104,10 @@ func (cc *ScpController) tryCopyWithoutCache(user string) {
 			utils.Logger.Infoln("Cache added.\n\n")
 			// If the timeout time is less than sshClientTimeoutWhenLogin during login,
 			// change to sshClientTimeoutWhenLogin
-			if hitLaunchers[0].SshTimeout < sshClientTimeoutWhenLogin {
-				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
+			if hitLauncher.SshTimeout < sshClientTimeoutWhenLogin {
+				hitLauncher.SshTimeout = sshClientTimeoutWhenLogin
 			}
-			if !hitLaunchers[0].Launch() {
+			if !hitLauncher.Launch() {
 				utils.Logger.Errorf("Login failed.\n")
 			}
 		} else {
@@ -120,59 +124,6 @@ func (cc *ScpController) searchAliasExistsOrNot() {
 			cc.destIp = server.Ip
 		}
 	}
-}
-
-func concurrencyScpTryToConnect(concurrency int, launchers []*launcher.ScpLauncher) []*launcher.ScpLauncher {
-	var hitLaunchers []*launcher.ScpLauncher
-	var mutex sync.Mutex
-	var hostKeyMutex sync.Mutex
-	// If the number of launchers is less than the set concurrency, change the concurrency to the number of launchers
-	if concurrency > len(launchers) {
-		concurrency = len(launchers)
-	}
-	launchersChan := make(chan *launcher.ScpLauncher)
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	// Producer
-	go func(ctx context.Context, launchersChan chan<- *launcher.ScpLauncher, launchers []*launcher.ScpLauncher) {
-		for _, launcherP := range launchers {
-			select {
-			case <-ctx.Done():
-				break
-			default:
-				launchersChan <- launcherP
-			}
-		}
-		close(launchersChan)
-	}(ctx, launchersChan, launchers)
-	// Consumer
-	var wg sync.WaitGroup
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func(ctx context.Context, cancelFunc context.CancelFunc,
-			launchersChan <-chan *launcher.ScpLauncher, cwg *sync.WaitGroup, mutex *sync.Mutex) {
-			defer cwg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case launcherP, ok := <-launchersChan:
-					if !ok {
-						return
-					}
-					launcherP.HostKeyMutex = &hostKeyMutex
-					if err := launcherP.TryToConnect(); err == nil {
-						mutex.Lock()
-						hitLaunchers = append(hitLaunchers, launcherP)
-						mutex.Unlock()
-						cancelFunc()
-					}
-				}
-			}
-		}(ctx, cancelFunc, launchersChan, &wg, &mutex)
-	}
-	wg.Wait()
-	cancelFunc()
-	return hitLaunchers
 }
 
 func NewScpController(source string, destination string, configuration *config.MainConfig) *ScpController {
