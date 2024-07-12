@@ -18,7 +18,10 @@ const (
 	SSHKeyKeyword        = "SSH-KEY"
 )
 
-var keysMap = sync.Map{}
+var (
+	keysMap      = sync.Map{}
+	hostKeyMutex = new(sync.Mutex)
+)
 
 type Connector interface {
 	Launch() bool
@@ -28,13 +31,12 @@ type Connector interface {
 }
 
 type SshConnector struct {
-	Ip           string
-	Port         string
-	User         string
-	Password     string
-	Key          string
-	SshTimeout   time.Duration
-	HostKeyMutex *sync.Mutex
+	Ip         string
+	Port       string
+	User       string
+	Password   string
+	Key        string
+	SshTimeout time.Duration
 }
 
 func (sc *SshConnector) Launch() bool {
@@ -42,11 +44,6 @@ func (sc *SshConnector) Launch() bool {
 }
 
 func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
-	// If no mutex is passed in, initialize one
-	if sc.HostKeyMutex == nil {
-		sc.HostKeyMutex = new(sync.Mutex)
-	}
-
 	var authMethods []ssh.AuthMethod
 	var privateKey []byte
 	if sc.Key != "" {
@@ -70,7 +67,7 @@ func (sc *SshConnector) LoadConfig() (config *ssh.ClientConfig) {
 	config = &ssh.ClientConfig{
 		User:            sc.User,
 		Auth:            authMethods,
-		HostKeyCallback: trustedHostKeyCallback(searchKeyFromAddress(sc.Ip), sc.Ip, sc.HostKeyMutex),
+		HostKeyCallback: trustedHostKeyCallback(searchKeyFromAddress(sc.Ip), sc.Ip, hostKeyMutex),
 		Timeout:         sc.SshTimeout,
 	}
 	return

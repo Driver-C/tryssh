@@ -1,11 +1,9 @@
 package control
 
 import (
-	"context"
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/launcher"
 	"github.com/Driver-C/tryssh/pkg/utils"
-	"sync"
 	"time"
 )
 
@@ -53,11 +51,16 @@ func (sc *SshController) tryLoginWithCache(user string, targetServer *config.Ser
 func (sc *SshController) tryLoginWithoutCache(user string) {
 	combinations := config.GenerateCombination(sc.targetIp, user, sc.configuration)
 	launchers := launcher.NewSshLaunchersByCombinations(combinations, sc.sshTimeout)
-	hitLaunchers := concurrencySshTryToConnect(sc.concurrency, launchers)
+	connectors := make([]launcher.Connector, len(launchers))
+	for i, l := range launchers {
+		connectors[i] = l
+	}
+	hitLaunchers := ConcurrencyTryToConnect(sc.concurrency, connectors)
 	if hitLaunchers != nil {
 		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
+		hitLauncher := hitLaunchers[0].(*launcher.SshLauncher)
 		// The new server cache information
-		newServerCache := launcher.GetConfigFromSshConnector(&hitLaunchers[0].SshConnector)
+		newServerCache := launcher.GetConfigFromSshConnector(&hitLauncher.SshConnector)
 		// Determine if the login attempt was successful after the old cache login failed.
 		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
 		if sc.cacheIsFound {
@@ -73,10 +76,10 @@ func (sc *SshController) tryLoginWithoutCache(user string) {
 			utils.Logger.Infoln("Cache added.\n\n")
 			// If the timeout time is less than sshClientTimeoutWhenLogin during login,
 			// change to sshClientTimeoutWhenLogin
-			if hitLaunchers[0].SshTimeout < sshClientTimeoutWhenLogin {
-				hitLaunchers[0].SshTimeout = sshClientTimeoutWhenLogin
+			if hitLauncher.SshTimeout < sshClientTimeoutWhenLogin {
+				hitLauncher.SshTimeout = sshClientTimeoutWhenLogin
 			}
-			if !hitLaunchers[0].Launch() {
+			if !hitLauncher.Launch() {
 				utils.Logger.Errorf("Login failed.\n")
 			}
 		} else {
@@ -93,59 +96,6 @@ func (sc *SshController) searchAliasExistsOrNot() {
 			sc.targetIp = server.Ip
 		}
 	}
-}
-
-func concurrencySshTryToConnect(concurrency int, launchers []*launcher.SshLauncher) []*launcher.SshLauncher {
-	var hitLaunchers []*launcher.SshLauncher
-	var mutex sync.Mutex
-	var hostKeyMutex sync.Mutex
-	// If the number of launchers is less than the set concurrency, change the concurrency to the number of launchers
-	if concurrency > len(launchers) {
-		concurrency = len(launchers)
-	}
-	launchersChan := make(chan *launcher.SshLauncher)
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	// Producer
-	go func(ctx context.Context, launchersChan chan<- *launcher.SshLauncher, launchers []*launcher.SshLauncher) {
-		for _, launcherP := range launchers {
-			select {
-			case <-ctx.Done():
-				break
-			default:
-				launchersChan <- launcherP
-			}
-		}
-		close(launchersChan)
-	}(ctx, launchersChan, launchers)
-	// Consumer
-	var wg sync.WaitGroup
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func(ctx context.Context, cancelFunc context.CancelFunc,
-			launchersChan <-chan *launcher.SshLauncher, cwg *sync.WaitGroup, mutex *sync.Mutex) {
-			defer cwg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case launcherP, ok := <-launchersChan:
-					if !ok {
-						return
-					}
-					launcherP.HostKeyMutex = &hostKeyMutex
-					if err := launcherP.TryToConnect(); err == nil {
-						mutex.Lock()
-						hitLaunchers = append(hitLaunchers, launcherP)
-						mutex.Unlock()
-						cancelFunc()
-					}
-				}
-			}
-		}(ctx, cancelFunc, launchersChan, &wg, &mutex)
-	}
-	wg.Wait()
-	cancelFunc()
-	return hitLaunchers
 }
 
 func NewSshController(targetIp string, configuration *config.MainConfig) *SshController {
