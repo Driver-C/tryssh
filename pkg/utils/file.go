@@ -39,7 +39,7 @@ func FileYamlMarshalAndWrite(path string, conf interface{}) bool {
 func ReadFile(filePath string) ([]byte, bool) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		Logger.Errorln("Error reading file：", err)
+		Logger.Errorln("Error reading file: ", err)
 		return nil, false
 	}
 	return content, true
