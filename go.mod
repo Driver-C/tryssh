@@ -2,7 +2,7 @@ module github.com/Driver-C/tryssh
 
 go 1.23.0
 
-toolchain go1.24.3
+toolchain go1.24
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.7
