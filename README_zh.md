@@ -19,23 +19,41 @@
 * 我经常跨操作系统使用SSH终端，但是没有找到让我在多种操作系统上使用习惯不变的工具
 * `tryssh` 我没用过，看着还不错，想试试
 
-## 当前开发状态
+## 环境要求
 
-目前`tryssh`处于功能完善阶段，基本功能已有，但是在功能的细节上做得不好还需要改进，比如安全。
+- Go 1.25 或更高版本
 
-目前仅有 *Driver-C* 一人参与开发，而且需要利用业务时间来完成，所以开发进度不会很快。
+## 开发
 
-如果遇到任何使用问题，任何建议请提交`issue`，会尽快回复。
+### 构建
 
-目前项目仅保留`master`分支用于发布稳定版本，`tag`也从master分支创建。
+```bash
+make
+```
 
-## 待做清单
+### 测试
 
-排名不区分优先级，以下内容在完成后删除对应条目
+```bash
+make test
+```
 
-1. 传输文件支持通配符
-2. 完成单元测试代码
-3. 安全相关功能，配置文件加密、隐藏明文显示的敏感信息、密码输入应改为交互式等
+### Lint
+
+```bash
+make lint
+```
+
+### 覆盖率
+
+```bash
+make coverage
+```
+
+### 交叉编译
+
+```bash
+make multi
+```
 
 ## 快速开始
 
@@ -46,8 +64,8 @@ tryssh create users testuser
 # 创建备选端口号 22
 tryssh create ports 22
 
-# 创建一个备选密码
-tryssh create passwords 123456
+# 创建一个备选密码（交互式输入）
+tryssh create passwords
 
 # 用以上创建的信息尝试登陆 192.168.1.1
 tryssh ssh 192.168.1.1
@@ -124,8 +142,8 @@ tryssh create users testuser
 # 创建备选端口号 22
 tryssh create ports 22
 
-# 创建一个备选密码
-tryssh create passwords 123456
+# 创建一个备选密码（交互式输入）
+tryssh create passwords
 ```
 
 ### delete 命令
@@ -368,4 +386,17 @@ tryssh scp -r 192.168.1.1:/root/testDir ~/Downloads/
 
 # 上传本地的testDir目录到192.168.1.1服务器/root/下并改名为testDir2
 tryssh scp -r ~/Downloads/testDir 192.168.1.1:/root/testDir2
+
+# 上传所有 .txt 文件到 192.168.1.1:/root/（通配符支持）
+tryssh scp ./*.txt 192.168.1.1:/root/
+
+# 从远程下载所有 .log 文件（通配符支持）
+tryssh scp 192.168.1.1:/var/log/*.log ./
 ```
+
+## 安全特性
+
+- **交互式密码输入**：密码通过交互式终端提示输入（不会暴露在 shell 历史中）
+- **敏感信息遮蔽**：密码和密钥在 `get` 输出和日志中被遮蔽显示
+- **配置文件加密**：设置 `TRYSSH_MASTER_KEY` 环境变量即可启用 AES-GCM 加密存储密码
+- **文件权限保护**：配置文件和目录使用严格权限 (0600/0700)

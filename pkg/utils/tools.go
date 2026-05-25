@@ -1,38 +1,35 @@
 package utils
 
-import (
-	"reflect"
-)
-
-func InterfaceSlice(slice interface{}) []interface{} {
-	s := reflect.ValueOf(slice)
-	if s.Kind() != reflect.Slice {
-		panic("InterfaceSlice() given a non-slice type")
+// ToInterfaceSlice converts a typed slice to []interface{} using generics.
+func ToInterfaceSlice[T any](s []T) []interface{} {
+	if s == nil {
+		return []interface{}{}
 	}
-
-	// Keep the distinction between nil and empty slice input
-	if s.IsNil() {
-		return nil
+	ret := make([]interface{}, len(s))
+	for i, v := range s {
+		ret[i] = v
 	}
-
-	ret := make([]interface{}, s.Len())
-
-	for i := 0; i < s.Len(); i++ {
-		ret[i] = s.Index(i).Interface()
-	}
-
 	return ret
 }
 
+// RemoveDuplicate removes duplicate strings from the slice, preserving order.
 func RemoveDuplicate(s []string) []string {
 	result := make([]string, 0, len(s))
-	temp := map[string]bool{}
+	seen := make(map[string]struct{}, len(s))
 
 	for _, v := range s {
-		if !temp[v] {
-			temp[v] = true
+		if _, ok := seen[v]; !ok {
+			seen[v] = struct{}{}
 			result = append(result, v)
 		}
 	}
 	return result
+}
+
+// MaskSecret masks a secret string, returning a fixed-length indicator.
+func MaskSecret(s string) string {
+	if len(s) == 0 {
+		return "<empty>"
+	}
+	return "****"
 }

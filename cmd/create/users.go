@@ -3,9 +3,11 @@ package create
 import (
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/control"
+	"github.com/Driver-C/tryssh/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
+// NewUsersCommand creates and returns the cobra command for creating a username entry.
 func NewUsersCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "users <username>",
@@ -13,9 +15,12 @@ func NewUsersCommand() *cobra.Command {
 		Short:   "Create an alternative username",
 		Long:    "Create an alternative username",
 		Aliases: []string{"user", "usr"},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			username := args[0]
-			configuration := config.LoadConfig()
+			configuration, err := config.LoadConfig()
+			if err != nil {
+				utils.Fatalln(err)
+			}
 			controller := control.NewCreateController(control.TypeUsers, username, configuration)
 			controller.ExecuteCreate()
 		},

@@ -5,85 +5,84 @@ import (
 	"github.com/Driver-C/tryssh/pkg/utils"
 )
 
+// DeleteController handles deletion of configuration entries such as users, ports,
+// passwords, keys, and server caches.
 type DeleteController struct {
 	deleteType    string
 	deleteContent string
 	configuration *config.MainConfig
 }
 
-func (dc DeleteController) ExecuteDelete() {
+// ExecuteDelete removes the configured entry from the main configuration.
+func (dc *DeleteController) ExecuteDelete() {
 	switch dc.deleteType {
 	case TypeUsers:
-		contents := dc.configuration.Main.Users
-		if newContents := dc.searchAndDelete(contents); newContents != nil {
+		if newContents := dc.searchAndDelete(dc.configuration.Main.Users); newContents != nil {
 			dc.configuration.Main.Users = newContents
 			dc.updateConfig()
 		} else {
-			utils.Logger.Warnf("No matching username: %s\n", dc.deleteContent)
+			utils.Warnf("No matching username: %s\n", dc.deleteContent)
 		}
 	case TypePorts:
-		contents := dc.configuration.Main.Ports
-		if newContents := dc.searchAndDelete(contents); newContents != nil {
+		if newContents := dc.searchAndDelete(dc.configuration.Main.Ports); newContents != nil {
 			dc.configuration.Main.Ports = newContents
 			dc.updateConfig()
 		} else {
-			utils.Logger.Warnf("No matching port: %s\n", dc.deleteContent)
+			utils.Warnf("No matching port: %s\n", dc.deleteContent)
 		}
 	case TypePasswords:
-		contents := dc.configuration.Main.Passwords
-		if newContents := dc.searchAndDelete(contents); newContents != nil {
+		if newContents := dc.searchAndDelete(dc.configuration.Main.Passwords); newContents != nil {
 			dc.configuration.Main.Passwords = newContents
 			dc.updateConfig()
 		} else {
-			utils.Logger.Warnf("No matching password: %s\n", dc.deleteContent)
+			utils.Warnln("No matching password")
 		}
 	case TypeKeys:
-		contents := dc.configuration.Main.Keys
-		if newContents := dc.searchAndDelete(contents); newContents != nil {
+		if newContents := dc.searchAndDelete(dc.configuration.Main.Keys); newContents != nil {
 			dc.configuration.Main.Keys = newContents
 			dc.updateConfig()
 		} else {
-			utils.Logger.Warnf("No matching key: %s\n", dc.deleteContent)
+			utils.Warnf("No matching key: %s\n", dc.deleteContent)
 		}
 	case TypeCaches:
-		// dc.deleteContent is ipAddress
+		if dc.deleteContent == "" {
+			utils.Errorln("IP address cannot be empty characters")
+			return
+		}
 		var deleteCount int
-		if dc.deleteContent != "" {
-			for index, server := range dc.configuration.ServerLists {
-				if server.Ip == dc.deleteContent {
-					dc.configuration.ServerLists = append(dc.configuration.ServerLists[:index],
-						dc.configuration.ServerLists[index+1:]...)
-					dc.updateConfig()
-					deleteCount++
-				}
+		for i := len(dc.configuration.ServerLists) - 1; i >= 0; i-- {
+			if dc.configuration.ServerLists[i].IP == dc.deleteContent {
+				dc.configuration.ServerLists = append(dc.configuration.ServerLists[:i],
+					dc.configuration.ServerLists[i+1:]...)
+				deleteCount++
 			}
-			if deleteCount == 0 {
-				utils.Logger.Warnf("No matching cache: %s\n", dc.deleteContent)
-			}
+		}
+		if deleteCount > 0 {
+			dc.updateConfig()
 		} else {
-			utils.Logger.Errorln("IP address cannot be empty characters")
+			utils.Warnf("No matching cache: %s\n", dc.deleteContent)
 		}
 	}
 }
 
-func (dc DeleteController) searchAndDelete(contents []string) []string {
+func (dc *DeleteController) searchAndDelete(contents []string) []string {
 	for index, content := range contents {
 		if dc.deleteContent == content {
-			contents = append(contents[:index], contents[index+1:]...)
-			return contents
+			return append(contents[:index], contents[index+1:]...)
 		}
 	}
 	return nil
 }
 
-func (dc DeleteController) updateConfig() {
-	if config.UpdateConfig(dc.configuration) {
-		utils.Logger.Infof("Delete %s: %s completed.\n", dc.deleteType, dc.deleteContent)
+func (dc *DeleteController) updateConfig() {
+	if err := config.UpdateConfig(dc.configuration); err == nil {
+		utils.Infof("Delete %s: %s completed.\n", dc.deleteType, dc.deleteContent)
 	} else {
-		utils.Logger.Errorf("Delete %s: %s failed.\n", dc.deleteType, dc.deleteContent)
+		utils.Errorf("Delete %s: %s failed.\n", dc.deleteType, dc.deleteContent)
 	}
 }
 
+// NewDeleteController creates a new DeleteController for the specified type and content.
 func NewDeleteController(deleteType string, deleteContent string,
 	configuration *config.MainConfig) *DeleteController {
 	return &DeleteController{

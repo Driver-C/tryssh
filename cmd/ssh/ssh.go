@@ -1,8 +1,10 @@
+// Package ssh provides the command for connecting to servers via SSH protocol.
 package ssh
 
 import (
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/control"
+	"github.com/Driver-C/tryssh/pkg/utils"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -12,7 +14,8 @@ const (
 	sshTimeout  = 1 * time.Second
 )
 
-func NewSshCommand() *cobra.Command {
+// NewSSHCommand creates and returns the cobra command for SSH connections.
+func NewSSHCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssh <ipAddress>",
 		Args:  cobra.ExactArgs(1),
@@ -22,9 +25,12 @@ func NewSshCommand() *cobra.Command {
 			user, _ := cmd.Flags().GetString("user")
 			concurrencyOpt, _ := cmd.Flags().GetInt("concurrency")
 			timeout, _ := cmd.Flags().GetDuration("timeout")
-			targetIp := args[0]
-			configuration := config.LoadConfig()
-			controller := control.NewSshController(targetIp, configuration)
+			targetIP := args[0]
+			configuration, err := config.LoadConfig()
+			if err != nil {
+				utils.Fatalln(err)
+			}
+			controller := control.NewSSHController(targetIP, configuration)
 			controller.TryLogin(user, concurrencyOpt, timeout)
 		},
 	}

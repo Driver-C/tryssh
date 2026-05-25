@@ -7,8 +7,9 @@ import (
 	"time"
 )
 
-type SshController struct {
-	targetIp      string
+// SSHController manages SSH login attempts using cached credentials or credential combinations.
+type SSHController struct {
+	targetIP      string
 	configuration *config.MainConfig
 	cacheIsFound  bool
 	cacheIndex    int
@@ -16,91 +17,74 @@ type SshController struct {
 	sshTimeout    time.Duration
 }
 
-// TryLogin Functional entrance
-func (sc *SshController) TryLogin(user string, concurrency int, sshTimeout time.Duration) {
-	// Set timeout
+// TryLogin attempts to log in to the target server, first using cached credentials
+// and then by trying all credential combinations.
+func (sc *SSHController) TryLogin(user string, concurrency int, sshTimeout time.Duration) {
 	sc.sshTimeout = sshTimeout
-	// Set concurrency
 	sc.concurrency = concurrency
-	// Obtain the real address based on the alias
-	sc.searchAliasExistsOrNot()
+	sc.targetIP = config.ResolveAlias(sc.targetIP, sc.configuration)
 	var targetServer *config.ServerListConfig
-	targetServer, sc.cacheIndex, sc.cacheIsFound = config.SelectServerCache(user, sc.targetIp, sc.configuration)
+	targetServer, sc.cacheIndex, sc.cacheIsFound = config.SelectServerCache(user, sc.targetIP, sc.configuration)
 	if user != "" {
-		utils.Logger.Infof("Specify the username \"%s\" to attempt to login to the server.\n", user)
+		utils.Infof("Specify the username \"%s\" to attempt to login to the server.\n", user)
 	}
 	if sc.cacheIsFound {
-		utils.Logger.Infof("The cache for %s is found, which will be used to try.\n", sc.targetIp)
+		utils.Infof("The cache for %s is found, which will be used to try.\n", sc.targetIP)
 		sc.tryLoginWithCache(user, targetServer)
 	} else {
-		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", sc.targetIp)
+		utils.Warnf("The cache for %s could not be found. Start trying to login.\n\n", sc.targetIP)
 		sc.tryLoginWithoutCache(user)
 	}
 }
 
-func (sc *SshController) tryLoginWithCache(user string, targetServer *config.ServerListConfig) {
-	lan := &launcher.SshLauncher{SshConnector: *launcher.GetSshConnectorFromConfig(targetServer)}
-	// Set default timeout time
-	lan.SshTimeout = sshClientTimeoutWhenLogin
+func (sc *SSHController) tryLoginWithCache(user string, targetServer *config.ServerListConfig) {
+	lan := &launcher.SSHLauncher{SSHConnector: *launcher.GetSSHConnectorFromConfig(targetServer)}
+	lan.SSHTimeout = sshClientTimeoutWhenLogin
 	if !lan.Launch() {
-		utils.Logger.Errorf("Failed to log in with cached information. Start trying to login again.\n\n")
+		utils.Errorf("Failed to log in with cached information. Start trying to login again.\n\n")
 		sc.tryLoginWithoutCache(user)
 	}
 }
 
-func (sc *SshController) tryLoginWithoutCache(user string) {
-	combinations := config.GenerateCombination(sc.targetIp, user, sc.configuration)
-	launchers := launcher.NewSshLaunchersByCombinations(combinations, sc.sshTimeout)
+func (sc *SSHController) tryLoginWithoutCache(user string) {
+	combinations := config.GenerateCombination(sc.targetIP, user, sc.configuration)
+	launchers := launcher.NewSSHLaunchersByCombinations(combinations, sc.sshTimeout)
 	connectors := make([]launcher.Connector, len(launchers))
 	for i, l := range launchers {
 		connectors[i] = l
 	}
 	hitLaunchers := ConcurrencyTryToConnect(sc.concurrency, connectors)
 	if len(hitLaunchers) > 0 {
-		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
-		hitLauncher := hitLaunchers[0].(*launcher.SshLauncher)
-		// The new server cache information
-		newServerCache := launcher.GetConfigFromSshConnector(&hitLauncher.SshConnector)
-		// Determine if the login attempt was successful after the old cache login failed.
-		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
+		utils.Infoln("Login succeeded. The cache will be added.")
+		hitLauncher := hitLaunchers[0].(*launcher.SSHLauncher)
+		newServerCache := launcher.GetConfigFromSSHConnector(&hitLauncher.SSHConnector)
 		if sc.cacheIsFound {
-			// Sync outdated cache's alias
 			newServerCache.Alias = sc.configuration.ServerLists[sc.cacheIndex].Alias
-
-			utils.Logger.Infoln("The old cache will be deleted.\n")
+			utils.Infoln("The old cache will be deleted.")
 			sc.configuration.ServerLists = append(
 				sc.configuration.ServerLists[:sc.cacheIndex], sc.configuration.ServerLists[sc.cacheIndex+1:]...)
 		}
 		sc.configuration.ServerLists = append(sc.configuration.ServerLists, *newServerCache)
-		if config.UpdateConfig(sc.configuration) {
-			utils.Logger.Infoln("Cache added.\n\n")
-			// If the timeout time is less than sshClientTimeoutWhenLogin during login,
-			// change to sshClientTimeoutWhenLogin
-			if hitLauncher.SshTimeout < sshClientTimeoutWhenLogin {
-				hitLauncher.SshTimeout = sshClientTimeoutWhenLogin
+		if err := config.UpdateConfig(sc.configuration); err == nil {
+			utils.Infoln("Cache added.")
+			if hitLauncher.SSHTimeout < sshClientTimeoutWhenLogin {
+				hitLauncher.SSHTimeout = sshClientTimeoutWhenLogin
 			}
 			if !hitLauncher.Launch() {
-				utils.Logger.Errorf("Login failed.\n")
+				utils.Errorf("Login failed.\n")
 			}
 		} else {
-			utils.Logger.Errorf("Cache added failed.\n\n")
+			utils.Errorf("Cache added failed.\n\n")
 		}
 	} else {
-		utils.Logger.Errorf("There is no password combination that can log in.\n")
+		utils.Errorf("There is no password combination that can log in.\n")
 	}
 }
 
-func (sc *SshController) searchAliasExistsOrNot() {
-	for _, server := range sc.configuration.ServerLists {
-		if server.Alias == sc.targetIp {
-			sc.targetIp = server.Ip
-		}
-	}
-}
-
-func NewSshController(targetIp string, configuration *config.MainConfig) *SshController {
-	return &SshController{
-		targetIp:      targetIp,
+// NewSSHController creates a new SSHController for the given target IP and configuration.
+func NewSSHController(targetIP string, configuration *config.MainConfig) *SSHController {
+	return &SSHController{
+		targetIP:      targetIP,
 		configuration: configuration,
 	}
 }

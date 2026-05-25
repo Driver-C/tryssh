@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewDeleteCommand creates and returns the cobra command for deleting configuration entries.
 func NewDeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete [command]",

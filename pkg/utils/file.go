@@ -7,75 +7,82 @@ import (
 	"path/filepath"
 )
 
-const (
-	configFileMode = 0644
-)
+// ConfigFileMode is the default file permission used for config files.
+const ConfigFileMode = 0600
 
-func FileYamlMarshalAndWrite(path string, conf interface{}) bool {
-	// Create a directory if it does not exist
+// FileYamlMarshalAndWrite marshals the given value to YAML and writes it atomically
+// to the specified path, creating parent directories as needed.
+func FileYamlMarshalAndWrite(path string, conf interface{}) error {
 	dirPath := filepath.Dir(path)
 	if _, err := os.Stat(dirPath); err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(dirPath, 0755); err != nil {
-				Logger.Fatalln("Directory creation failed: ", err)
+			if mkdirErr := os.MkdirAll(dirPath, 0700); mkdirErr != nil {
+				return mkdirErr
 			}
 		} else {
-			Logger.Fatalln("An error occurred while searching for the directory: ", dirPath)
+			return err
 		}
 	}
 
 	confData, err := yaml.Marshal(conf)
 	if err != nil {
-		Logger.Fatalln("Configuration file marshal failed: ", err)
-	} else {
-		err := os.WriteFile(path, confData, configFileMode)
-		if err != nil {
-			Logger.Fatalln("Configuration file writing failed: ", err)
-		}
+		return err
 	}
-	return true
+	return UpdateFile(path, confData, ConfigFileMode)
 }
 
+// ReadFile reads the entire file and returns its contents.
 func ReadFile(filePath string) ([]byte, bool) {
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filePath) //nolint:gosec // G304: path is from caller-provided config
 	if err != nil {
-		Logger.Errorln("Error reading file: ", err)
+		Errorln("Error reading file: ", err)
 		return nil, false
 	}
 	return content, true
 }
 
+// CheckFileIsExist returns true if the file exists (including when unreadable due to permissions).
 func CheckFileIsExist(filename string) bool {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return false
-	}
-	return true
+	_, err := os.Stat(filename)
+	return err == nil || !os.IsNotExist(err)
 }
 
-func CreateFile(filePath string, perm fs.FileMode) bool {
-	file, err := os.Create(filePath)
+// CreateFile creates an empty file with the specified permissions atomically.
+func CreateFile(filePath string, perm fs.FileMode) error {
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, perm) //nolint:gosec // G304: path is from caller-provided config
 	if err != nil {
-		Logger.Errorln("Create file error: ", err)
-		return false
+		return err
 	}
-	if err := file.Chmod(perm); err != nil {
-		Logger.Errorln("Chmod error: ", err)
-		return false
-	}
-
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			Logger.Fatalln("Failed to close file after creating it: ", err)
-		}
-	}(file)
-	return true
+	return file.Close()
 }
 
-func UpdateFile(filePath string, fileContent []byte, perm fs.FileMode) bool {
-	if err := os.WriteFile(filePath, fileContent, perm); err != nil {
-		Logger.Errorln("File writing failed: ", err)
-		return false
+// UpdateFile writes the given content to the file with the specified permissions atomically
+// using a temporary file and rename to prevent corruption on crash.
+func UpdateFile(filePath string, fileContent []byte, perm fs.FileMode) error {
+	dir := filepath.Dir(filePath)
+	tmpFile, err := os.CreateTemp(dir, ".tryssh-tmp-*")
+	if err != nil {
+		return err
 	}
-	return true
+	tmpPath := tmpFile.Name()
+
+	if _, writeErr := tmpFile.Write(fileContent); writeErr != nil {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpPath)
+		return writeErr
+	}
+	if chmodErr := tmpFile.Chmod(perm); chmodErr != nil {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpPath)
+		return chmodErr
+	}
+	if closeErr := tmpFile.Close(); closeErr != nil {
+		_ = os.Remove(tmpPath)
+		return closeErr
+	}
+	if renameErr := os.Rename(tmpPath, filePath); renameErr != nil {
+		_ = os.Remove(tmpPath)
+		return renameErr
+	}
+	return nil
 }

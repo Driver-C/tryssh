@@ -1,3 +1,4 @@
+// Package version provides version information for the tryssh CLI.
 package version
 
 import (
@@ -5,18 +6,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version holds the build version, Go version, and build time set at link time.
 var (
+	// Version is the application version string set at build time.
 	Version        string
 	BuildGoVersion string
 	BuildTime      string
 )
 
+// NewVersionCommand creates and returns the cobra command for displaying version information.
 func NewVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the client version information for the current context",
 		Long:  "Print the client version information for the current context",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			var versionContent string
 			if Version != "" {
 				versionContent += fmt.Sprintf("Version: %s\n", Version)
@@ -27,7 +31,10 @@ func NewVersionCommand() *cobra.Command {
 			if BuildTime != "" {
 				versionContent += fmt.Sprintf("BuildTime: %s\n", BuildTime)
 			}
-			fmt.Printf(versionContent)
+			if versionContent == "" {
+					versionContent = "Version: (dev)\n"
+				}
+				fmt.Printf("%s", versionContent)
 		},
 	}
 	return cmd

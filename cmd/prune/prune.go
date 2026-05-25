@@ -1,8 +1,10 @@
+// Package prune provides the command for pruning stale cache entries.
 package prune
 
 import (
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/control"
+	"github.com/Driver-C/tryssh/pkg/utils"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -12,16 +14,20 @@ const (
 	sshTimeout  = 2 * time.Second
 )
 
+// NewPruneCommand creates and returns the cobra command for pruning invalid caches.
 func NewPruneCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prune",
 		Short: "Check if all current caches are available and clear the ones that are not available",
 		Long:  "Check if all current caches are available and clear the ones that are not available",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			auto, _ := cmd.Flags().GetBool("auto")
 			concurrencyOpt, _ := cmd.Flags().GetInt("concurrency")
 			timeout, _ := cmd.Flags().GetDuration("timeout")
-			configuration := config.LoadConfig()
+			configuration, err := config.LoadConfig()
+			if err != nil {
+				utils.Fatalln(err)
+			}
 			controller := control.NewPruneController(configuration, auto, timeout, concurrencyOpt)
 			controller.PruneCaches()
 		},
