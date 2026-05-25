@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Resource type constants used to identify the kind of configuration entry.
 const (
 	TypeUsers                 = "users"
 	TypePorts                 = "ports"
@@ -17,36 +18,46 @@ const (
 	sshClientTimeoutWhenLogin = 5 * time.Second
 )
 
+// ConcurrencyTryToConnect attempts to connect using the given connectors concurrently,
+// returning the ones that succeed.
 func ConcurrencyTryToConnect(concurrency int, connectors []launcher.Connector) []launcher.Connector {
-	hitConnectors := make([]launcher.Connector, 0)
-	mutex := new(sync.Mutex)
-	bar := pb.StartNew(len(connectors))
-	bar.Set("prefix", "Attempting:")
-	// If the number of connectors is less than the set concurrency, change the concurrency to the number of connectors
+	if len(connectors) == 0 {
+		return nil
+	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
 	if concurrency > len(connectors) {
 		concurrency = len(connectors)
 	}
+
+	hitConnectors := make([]launcher.Connector, 0)
+	bar := pb.StartNew(len(connectors))
+	bar.Set("prefix", "Attempting:")
+
 	connectorsChan := make(chan launcher.Connector)
 	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
 	// Producer
-	go func(ctx context.Context, connectorsChan chan<- launcher.Connector, connectors []launcher.Connector) {
+	go func() {
+		defer close(connectorsChan)
 		for _, connector := range connectors {
 			select {
 			case <-ctx.Done():
-				break
-			default:
-				connectorsChan <- connector
+				return
+			case connectorsChan <- connector:
 			}
 		}
-		close(connectorsChan)
-	}(ctx, connectorsChan, connectors)
+	}()
+
 	// Consumer
+	var mu sync.Mutex
 	var wg sync.WaitGroup
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
-		go func(ctx context.Context, cancelFunc context.CancelFunc,
-			connectorsChan <-chan launcher.Connector, cwg *sync.WaitGroup, mutex *sync.Mutex) {
-			defer cwg.Done()
+		go func() {
+			defer wg.Done()
 			for {
 				select {
 				case <-ctx.Done():
@@ -56,19 +67,17 @@ func ConcurrencyTryToConnect(concurrency int, connectors []launcher.Connector) [
 						return
 					}
 					if err := connector.TryToConnect(); err == nil {
-						mutex.Lock()
+						mu.Lock()
 						hitConnectors = append(hitConnectors, connector)
-						mutex.Unlock()
-						bar.Finish()
+						mu.Unlock()
 						cancelFunc()
 					}
 					bar.Increment()
 				}
 			}
-		}(ctx, cancelFunc, connectorsChan, &wg, mutex)
+		}()
 	}
 	wg.Wait()
 	bar.Finish()
-	cancelFunc()
 	return hitConnectors
 }

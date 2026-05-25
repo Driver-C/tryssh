@@ -3,9 +3,11 @@ package create
 import (
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/control"
+	"github.com/Driver-C/tryssh/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
+// NewKeysCommand creates and returns the cobra command for creating a key file path entry.
 func NewKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "keys <keyFilePath>",
@@ -13,9 +15,12 @@ func NewKeysCommand() *cobra.Command {
 		Short:   "Create an alternative key file path",
 		Long:    "Create an alternative key file path",
 		Aliases: []string{"key"},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			keyPath := args[0]
-			configuration := config.LoadConfig()
+			configuration, err := config.LoadConfig()
+			if err != nil {
+				utils.Fatalln(err)
+			}
 			controller := control.NewCreateController(control.TypeKeys, keyPath, configuration)
 			controller.ExecuteCreate()
 		},

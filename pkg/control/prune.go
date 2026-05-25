@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// PruneController verifies cached server entries and removes those that are no longer reachable.
 type PruneController struct {
 	configuration *config.MainConfig
 	auto          bool
@@ -19,31 +20,32 @@ type PruneController struct {
 	concurrency   int
 }
 
+// PruneCaches checks all cached server entries and removes those that fail to connect.
 func (pc *PruneController) PruneCaches() {
 	newServerList := make([]config.ServerListConfig, 0)
 	if pc.auto {
 		newServerList = pc.concurrencyDeleteCache()
 	} else {
 		for _, server := range pc.configuration.ServerLists {
-			lan := &launcher.SshLauncher{SshConnector: *launcher.GetSshConnectorFromConfig(&server)}
+			lan := &launcher.SSHLauncher{SSHConnector: *launcher.GetSSHConnectorFromConfig(&server)}
 			// Set timeout
-			lan.SshTimeout = pc.sshTimeout
+			lan.SSHTimeout = pc.sshTimeout
 			// Determine if connection is possible
 			if err := lan.TryToConnect(); err != nil {
 				if !pc.interactiveDeleteCache(server) {
 					newServerList = append(newServerList, server)
 				}
 			} else {
-				utils.Logger.Infof("Cache %v is still available.", server)
+				utils.Infof("Cache %v is still available.", server)
 				newServerList = append(newServerList, server)
 			}
 		}
 	}
 	pc.configuration.ServerLists = newServerList
-	if config.UpdateConfig(pc.configuration) {
-		utils.Logger.Infoln("Update config successful.")
+	if err := config.UpdateConfig(pc.configuration); err == nil {
+		utils.Infoln("Update config successful.")
 	} else {
-		utils.Logger.Errorln("Update config failed.")
+		utils.Errorln("Update config failed.")
 	}
 }
 
@@ -58,18 +60,22 @@ func (pc *PruneController) interactiveDeleteCache(server config.ServerListConfig
 		stdin = strings.TrimSpace(stdin)
 		switch stdin {
 		case "yes":
-			utils.Logger.Infof("The cache %v has been marked for deletion.", server)
+			utils.Infof("The cache %v has been marked for deletion.", server)
 			return true
 		case "no":
-			utils.Logger.Infof("Cache %v skipped.", server)
+			utils.Infof("Cache %v skipped.", server)
 			return false
 		default:
-			utils.Logger.Errorln("Input error:", stdin)
+			utils.Errorln("Input error:", stdin)
 		}
 	}
 }
 
 func (pc *PruneController) concurrencyDeleteCache() []config.ServerListConfig {
+	if pc.concurrency < 1 {
+		pc.concurrency = 1
+	}
+
 	newServerList := make([]config.ServerListConfig, 0)
 	serversChan := make(chan *config.ServerListConfig)
 	var mutex sync.Mutex
@@ -92,15 +98,15 @@ func (pc *PruneController) concurrencyDeleteCache() []config.ServerListConfig {
 				if !ok {
 					break
 				}
-				lan := &launcher.SshLauncher{SshConnector: *launcher.GetSshConnectorFromConfig(serverP)}
-				lan.SshTimeout = pc.sshTimeout
+				lan := &launcher.SSHLauncher{SSHConnector: *launcher.GetSSHConnectorFromConfig(serverP)}
+				lan.SSHTimeout = pc.sshTimeout
 				if err := lan.TryToConnect(); err == nil {
-					utils.Logger.Infof("Cache %v is still available.", *serverP)
+					utils.Infof("Cache %v is still available.", *serverP)
 					mutex.Lock()
 					newServerList = append(newServerList, *serverP)
 					mutex.Unlock()
 				} else {
-					utils.Logger.Infof("The cache %v has been marked for deletion.", *serverP)
+					utils.Infof("The cache %v has been marked for deletion.", *serverP)
 				}
 			}
 		}(serversChan, &wg)
@@ -109,6 +115,7 @@ func (pc *PruneController) concurrencyDeleteCache() []config.ServerListConfig {
 	return newServerList
 }
 
+// NewPruneController creates a new PruneController with the given configuration and options.
 func NewPruneController(configuration *config.MainConfig, auto bool, timeout time.Duration,
 	concurrency int) *PruneController {
 	return &PruneController{

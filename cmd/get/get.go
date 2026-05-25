@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGetCommand creates and returns the cobra command for retrieving configuration entries.
 func NewGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get [command]",

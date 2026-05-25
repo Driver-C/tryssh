@@ -19,23 +19,41 @@ Of course, it can also manage the usernames, port numbers, passwords, and cached
 * I frequently use SSH terminal across multiple operating systems, but I haven't found a tool that allows me to maintain the same workflow across different OSes
 * I haven't used `tryssh` before, but it looks good, and I want to give it a try
 
-## Current development status
+## Requirements
 
-Currently, `tryssh` is in the stage of feature completion. The core functionalities are already implemented, but there is room for improvement in terms of details, particularly in areas such as security.
+- Go 1.25 or later
 
-Currently, only one person *Driver-C* is involved in the development, and the progress is limited by the need to allocate time from other work responsibilities. Therefore, the development progress is not expected to be fast.
+## Development
 
-If you encounter any usage issues or have any suggestions, please submit an `issue`. We will respond as soon as possible.
+### Build
 
-Currently, the project only maintains the `master` branch for releasing stable versions, and `tags` are created from the `master` branch as well.
+```bash
+make
+```
 
-## TODO list
+### Test
 
-Rankings do not differentiate priority levels. Delete the corresponding entry after completion of the following content.
+```bash
+make test
+```
 
-1. File transfer supports wildcards
-2. Completing unit test code
-3. Security-related features, such as encrypting configuration files, hiding sensitive information from plain text display, and switching to interactive password input
+### Lint
+
+```bash
+make lint
+```
+
+### Coverage
+
+```bash
+make coverage
+```
+
+### Cross-compilation
+
+```bash
+make multi
+```
 
 ## Quick Start
 
@@ -46,8 +64,8 @@ tryssh create users testuser
 # Create an alternative port number 22
 tryssh create ports 22
 
-# Create an alternative password
-tryssh create passwords 123456
+# Create an alternative password (interactive prompt)
+tryssh create passwords
 
 # Attempt to log in to 192.168.1.1 using the information created above
 tryssh ssh 192.168.1.1
@@ -125,8 +143,8 @@ tryssh create users testuser
 # Create an alternative port: 22
 tryssh create ports 22
 
-# Create an alternative passwords: 123456
-tryssh create passwords 123456
+# Create an alternative password (interactive prompt)
+tryssh create passwords
 ```
 
 ### Command: delete
@@ -369,4 +387,17 @@ tryssh scp -r 192.168.1.1:/root/testDir ~/Downloads/
 
 # Upload testDir directory to 192.168.1.1 and rename it to testDir2 and place it under /root/
 tryssh scp -r ~/Downloads/testDir 192.168.1.1:/root/testDir2
+
+# Upload all .txt files to 192.168.1.1:/root/ (wildcard support)
+tryssh scp ./*.txt 192.168.1.1:/root/
+
+# Download all .log files from remote (wildcard support)
+tryssh scp 192.168.1.1:/var/log/*.log ./
 ```
+
+## Security
+
+- **Interactive password input**: Passwords are entered via interactive terminal prompts (never exposed in shell history)
+- **Sensitive info masking**: Passwords and keys are masked in `get` output and logs
+- **Config encryption**: Set the `TRYSSH_MASTER_KEY` environment variable to enable AES-GCM encryption for stored passwords
+- **File permissions**: Config files and directories use restrictive permissions (0600/0700)

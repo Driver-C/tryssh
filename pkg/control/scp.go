@@ -1,82 +1,108 @@
 package control
 
 import (
+	"strings"
+	"time"
+
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/launcher"
 	"github.com/Driver-C/tryssh/pkg/utils"
-	"strings"
-	"time"
 )
 
+// ScpController manages SCP file copy operations using cached credentials or credential combinations.
 type ScpController struct {
 	source        string
 	destination   string
 	configuration *config.MainConfig
 	cacheIsFound  bool
 	cacheIndex    int
-	destIp        string
+	destIP        string
 	concurrency   int
 	sshTimeout    time.Duration
 	recursive     bool
 }
 
-// TryCopy Functional entrance
+// parseRemotePath parses a remote path string (host:path or [host]:path) and returns
+// the host/alias part and the path part.
+func parseRemotePath(s string) (host, path string, ok bool) {
+	if strings.HasPrefix(s, "[") {
+		closeBracket := strings.Index(s, "]")
+		if closeBracket < 0 {
+			return "", "", false
+		}
+		host = s[1:closeBracket]
+		rest := s[closeBracket+1:]
+		if rest == "" {
+			return host, "", false
+		}
+		if rest[0] == ':' {
+			if len(rest) == 1 {
+				return host, "", false
+			}
+			return host, rest[1:], true
+		}
+		return host, rest, true
+	}
+	parts := strings.SplitN(s, ":", 2)
+	if len(parts) == 2 && parts[1] != "" {
+		return parts[0], parts[1], true
+	}
+	return "", "", false
+}
+
+// formatRemotePath builds a "host:path" string, wrapping IPv6 addresses in brackets.
+func formatRemotePath(host, path string) string {
+	if strings.Contains(host, ":") {
+		return "[" + host + "]:" + path
+	}
+	return host + ":" + path
+}
+
+// TryCopy attempts to copy files to/from the target server, first using cached
+// credentials and then by trying all credential combinations.
 func (cc *ScpController) TryCopy(user string, concurrency int, recursive bool, sshTimeout time.Duration) {
-	// Set timeout
 	cc.sshTimeout = sshTimeout
-	// Set concurrency
 	cc.concurrency = concurrency
-	// Set recursive or not
 	cc.recursive = recursive
-	if strings.Contains(cc.source, ":") {
-		cc.destIp = strings.Split(cc.source, ":")[0]
-		remotePath := strings.Split(cc.source, ":")[1]
-		// Obtain the real address based on the alias
-		cc.searchAliasExistsOrNot()
-		// Reassemble remote server address and file path
-		cc.source = strings.Join([]string{cc.destIp, remotePath}, ":")
-	} else if strings.Contains(cc.destination, ":") {
-		cc.destIp = strings.Split(cc.destination, ":")[0]
-		remotePath := strings.Split(cc.destination, ":")[1]
-		// Obtain the real address based on the alias
-		cc.searchAliasExistsOrNot()
-		// Reassemble remote server address and file path
-		cc.destination = strings.Join([]string{cc.destIp, remotePath}, ":")
+
+	if host, path, ok := parseRemotePath(cc.source); ok {
+		cc.destIP = config.ResolveAlias(host, cc.configuration)
+		cc.source = formatRemotePath(cc.destIP, path)
+	} else if host, path, ok := parseRemotePath(cc.destination); ok {
+		cc.destIP = config.ResolveAlias(host, cc.configuration)
+		cc.destination = formatRemotePath(cc.destIP, path)
 	} else {
+		utils.Errorln("Unable to determine SCP direction: no valid remote path found in source or destination")
 		return
 	}
-	// Obtain the real address based on the alias
-	cc.searchAliasExistsOrNot()
-	// Reassemble remote server address and file path
 	var targetServer *config.ServerListConfig
-	targetServer, cc.cacheIndex, cc.cacheIsFound = config.SelectServerCache(user, cc.destIp, cc.configuration)
+	targetServer, cc.cacheIndex, cc.cacheIsFound = config.SelectServerCache(user, cc.destIP, cc.configuration)
 
 	if cc.cacheIsFound {
-		utils.Logger.Infof("The cache for %s is found, which will be used to try.\n", cc.destIp)
+		utils.Infof("The cache for %s is found, which will be used to try.\n", cc.destIP)
 		cc.tryCopyWithCache(user, targetServer)
 	} else {
-		utils.Logger.Warnf("The cache for %s could not be found. Start trying to login.\n\n", cc.destIp)
+		utils.Warnf("The cache for %s could not be found. Start trying to login.\n\n", cc.destIP)
 		cc.tryCopyWithoutCache(user)
 	}
 }
 
 func (cc *ScpController) tryCopyWithCache(user string, targetServer *config.ServerListConfig) {
 	lan := &launcher.ScpLauncher{
-		SshConnector: *launcher.GetSshConnectorFromConfig(targetServer),
+		SSHConnector: *launcher.GetSSHConnectorFromConfig(targetServer),
 		Src:          cc.source,
 		Dest:         cc.destination,
 		Recursive:    cc.recursive,
 	}
-	// Set default timeout time
-	lan.SshTimeout = sshClientTimeoutWhenLogin
+	lan.SSHTimeout = sshClientTimeoutWhenLogin
 	if !lan.Launch() {
-		utils.Logger.Errorf("Failed to log in with cached information. Start trying to login again.\n\n")
+		utils.Errorf("Failed to log in with cached information. Start trying to login again.\n\n")
 		cc.tryCopyWithoutCache(user)
 	}
 }
 
 func (cc *ScpController) tryCopyWithoutCache(user string) {
-	combinations := config.GenerateCombination(cc.destIp, user, cc.configuration)
+	combinations := config.GenerateCombination(cc.destIP, user, cc.configuration)
 	launchers := launcher.NewScpLaunchersByCombinations(combinations, cc.source, cc.destination,
 		cc.recursive, cc.sshTimeout)
 	connectors := make([]launcher.Connector, len(launchers))
@@ -85,47 +111,35 @@ func (cc *ScpController) tryCopyWithoutCache(user string) {
 	}
 	hitLaunchers := ConcurrencyTryToConnect(cc.concurrency, connectors)
 	if len(hitLaunchers) > 0 {
-		utils.Logger.Infoln("Login succeeded. The cache will be added.\n")
+		utils.Infoln("Login succeeded. The cache will be added.")
 		hitLauncher := hitLaunchers[0].(*launcher.ScpLauncher)
-		// The new server cache information
-		newServerCache := launcher.GetConfigFromSshConnector(&hitLauncher.SshConnector)
-		// Determine if the login attempt was successful after the old cache login failed.
-		// If so, delete the old cache information that cannot be logged in after the login attempt is successful
+		newServerCache := launcher.GetConfigFromSSHConnector(&hitLauncher.SSHConnector)
 		if cc.cacheIsFound {
-			// Sync outdated cache's alias
 			newServerCache.Alias = cc.configuration.ServerLists[cc.cacheIndex].Alias
-
-			utils.Logger.Infoln("The old cache will be deleted.\n")
+			utils.Infoln("The old cache will be deleted.")
 			cc.configuration.ServerLists = append(
 				cc.configuration.ServerLists[:cc.cacheIndex], cc.configuration.ServerLists[cc.cacheIndex+1:]...)
 		}
 		cc.configuration.ServerLists = append(cc.configuration.ServerLists, *newServerCache)
-		if config.UpdateConfig(cc.configuration) {
-			utils.Logger.Infoln("Cache added.\n\n")
-			// If the timeout time is less than sshClientTimeoutWhenLogin during login,
-			// change to sshClientTimeoutWhenLogin
-			if hitLauncher.SshTimeout < sshClientTimeoutWhenLogin {
-				hitLauncher.SshTimeout = sshClientTimeoutWhenLogin
+		if err := config.UpdateConfig(cc.configuration); err == nil {
+			utils.Infoln("Cache added.")
+			if cc.sshTimeout > sshClientTimeoutWhenLogin {
+				hitLauncher.SSHTimeout = cc.sshTimeout
+			} else {
+				hitLauncher.SSHTimeout = sshClientTimeoutWhenLogin
 			}
 			if !hitLauncher.Launch() {
-				utils.Logger.Errorf("Login failed.\n")
+				utils.Errorf("Login failed.\n")
 			}
 		} else {
-			utils.Logger.Errorf("Cache added failed.\n\n")
+			utils.Errorf("Cache added failed.\n\n")
 		}
 	} else {
-		utils.Logger.Errorf("There is no password combination that can log in.\n")
+		utils.Errorf("There is no password combination that can log in.\n")
 	}
 }
 
-func (cc *ScpController) searchAliasExistsOrNot() {
-	for _, server := range cc.configuration.ServerLists {
-		if server.Alias == cc.destIp {
-			cc.destIp = server.Ip
-		}
-	}
-}
-
+// NewScpController creates a new ScpController for the given source, destination, and configuration.
 func NewScpController(source string, destination string, configuration *config.MainConfig) *ScpController {
 	return &ScpController{
 		source:        source,

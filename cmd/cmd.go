@@ -1,3 +1,4 @@
+// Package cmd provides the root command and subcommand registration for tryssh.
 package cmd
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewTrysshCommand creates and returns the root cobra command for the tryssh application.
 func NewTrysshCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "tryssh [command]",
@@ -19,7 +21,7 @@ func NewTrysshCommand() *cobra.Command {
 		Long:  "A command line ssh terminal tool.",
 	}
 	rootCmd.AddCommand(version.NewVersionCommand())
-	rootCmd.AddCommand(ssh.NewSshCommand())
+	rootCmd.AddCommand(ssh.NewSSHCommand())
 	rootCmd.AddCommand(scp.NewScpCommand())
 	rootCmd.AddCommand(alias.NewAliasCommand())
 	rootCmd.AddCommand(create.NewCreateCommand())

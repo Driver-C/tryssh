@@ -14,7 +14,6 @@ endif
 BINARY_VERSION ?= $(GIT_TAG)
 
 ifeq ($(BINARY_VERSION),)
-	# If cannot find any information that can be used as a version number, change it to debug
 	BINARY_VERSION := "debug"
 endif
 
@@ -38,6 +37,23 @@ clean:
 	@go clean
 	@rm -f ./$(BIN_NAME)
 	@rm -rf ./release
+
+.PHONY: test
+test:
+	@go test -race -v ./...
+
+.PHONY: coverage
+coverage:
+	@go test -race -coverprofile=coverage.out ./...
+	@go tool cover -func=coverage.out
+
+.PHONY: lint
+lint:
+	@golangci-lint run ./...
+
+.PHONY: vet
+vet:
+	@go vet ./...
 
 .PHONY: multi
 multi: tidy

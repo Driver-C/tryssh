@@ -1,9 +1,11 @@
+// Package alias provides commands for managing server aliases (set, unset, list).
 package alias
 
 import (
 	"github.com/spf13/cobra"
 )
 
+// NewAliasCommand creates and returns the cobra command for managing server aliases.
 func NewAliasCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "alias <subCommand> [flags]",

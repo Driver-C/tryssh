@@ -1,8 +1,10 @@
+// Package scp provides the command for copying files via SCP/SFTP.
 package scp
 
 import (
 	"github.com/Driver-C/tryssh/pkg/config"
 	"github.com/Driver-C/tryssh/pkg/control"
+	"github.com/Driver-C/tryssh/pkg/utils"
 	"github.com/spf13/cobra"
 	"time"
 )
@@ -24,6 +26,7 @@ tryssh scp -r 192.168.1.1:/root/testDir ~/Downloads/
 # Upload testDir directory to 192.168.1.1 and rename it to testDir2 and place it under /root/
 tryssh scp -r ~/Downloads/testDir 192.168.1.1:/root/testDir2`
 
+// NewScpCommand creates and returns the cobra command for SCP file transfers.
 func NewScpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "scp <source> <destination>",
@@ -38,7 +41,10 @@ func NewScpCommand() *cobra.Command {
 			concurrencyOpt, _ := cmd.Flags().GetInt("concurrency")
 			timeout, _ := cmd.Flags().GetDuration("timeout")
 			recursive, _ := cmd.Flags().GetBool("recursive")
-			configuration := config.LoadConfig()
+			configuration, err := config.LoadConfig()
+			if err != nil {
+				utils.Fatalln(err)
+			}
 			controller := control.NewScpController(source, destination, configuration)
 			controller.TryCopy(user, concurrencyOpt, recursive, timeout)
 		},

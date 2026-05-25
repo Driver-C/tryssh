@@ -1,9 +1,11 @@
+// Package create provides commands for creating configuration entries (users, ports, passwords, keys, caches).
 package create
 
 import (
 	"github.com/spf13/cobra"
 )
 
+// NewCreateCommand creates and returns the cobra command for creating configuration entries.
 func NewCreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create [command]",
