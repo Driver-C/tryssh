@@ -69,6 +69,28 @@ func GetMasterKey() ([]byte, error) {
 	return masterKey, nil
 }
 
+// GetCachedMasterKey returns the master key only if already cached or available
+// via the environment variable, without prompting interactively.
+func GetCachedMasterKey() ([]byte, error) {
+	masterKeyMu.Lock()
+	defer masterKeyMu.Unlock()
+
+	if len(masterKey) > 0 {
+		return masterKey, nil
+	}
+
+	if envKey := os.Getenv(keyEnvVar); envKey != "" {
+		key, err := deriveKey([]byte(envKey))
+		if err != nil {
+			return nil, err
+		}
+		masterKey = key
+		return masterKey, nil
+	}
+
+	return nil, nil
+}
+
 // ClearMasterKey removes the cached master key from memory.
 func ClearMasterKey() {
 	masterKeyMu.Lock()

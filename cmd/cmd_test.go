@@ -27,6 +27,7 @@ func TestNewTrysshCommand_Subcommands(t *testing.T) {
 		"delete",
 		"get",
 		"prune",
+		"encrypt",
 	}
 
 	for _, name := range expectedSubcommands {
@@ -51,6 +52,6 @@ func TestNewTrysshCommand_DisableDefaultCompletion(t *testing.T) {
 func TestNewTrysshCommand_SubcommandCount(t *testing.T) {
 	rootCmd := NewTrysshCommand()
 
-	assert.Len(t, rootCmd.Commands(), 8,
-		"root command should have exactly 8 subcommands")
+	assert.Len(t, rootCmd.Commands(), 9,
+		"root command should have exactly 9 subcommands")
 }

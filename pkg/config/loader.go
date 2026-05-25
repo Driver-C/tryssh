@@ -65,11 +65,30 @@ func UpdateConfigAtPath(configPath string, conf *MainConfig) error {
 }
 
 // decryptConfig decrypts all encrypted fields in the config using the master key.
+// Only prompts for the master password if encrypted content is detected.
 func decryptConfig(c *MainConfig) error {
+	hasEncrypted := false
+	for _, pwd := range c.Main.Passwords {
+		if utils.IsEncrypted(pwd) {
+			hasEncrypted = true
+			break
+		}
+	}
+	if !hasEncrypted {
+		for _, s := range c.ServerLists {
+			if utils.IsEncrypted(s.Password) {
+				hasEncrypted = true
+				break
+			}
+		}
+	}
+	if !hasEncrypted {
+		return nil
+	}
+
 	key, err := utils.GetMasterKey()
 	if err != nil || key == nil {
-		// No master key set — treat all fields as plaintext (backward compatible)
-		return nil
+		return fmt.Errorf("encrypted fields found but no master key provided")
 	}
 
 	for i, pwd := range c.Main.Passwords {
@@ -95,10 +114,11 @@ func decryptConfig(c *MainConfig) error {
 }
 
 // encryptConfigForSave creates a copy with encrypted passwords for saving to disk.
+// Uses the cached master key only — does not prompt interactively.
 func encryptConfigForSave(conf *MainConfig) (*MainConfig, error) {
-	key, err := utils.GetMasterKey()
+	key, err := utils.GetCachedMasterKey()
 	if err != nil || key == nil {
-		// No master key — save as plaintext (backward compatible)
+		// No master key — save as plaintext
 		return conf, nil
 	}
 
