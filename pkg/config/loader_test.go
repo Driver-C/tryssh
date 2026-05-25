@@ -467,12 +467,26 @@ func TestDecryptConfig_NoMasterKey(t *testing.T) {
 	os.Unsetenv("TRYSSH_MASTER_KEY")
 	clearMasterKeyForTest()
 
+	// Plaintext config — no prompt needed, no error
 	conf := &MainConfig{}
 	conf.Main.Passwords = []string{"plaintext"}
 
 	err := decryptConfig(conf)
 	assert.NoError(t, err)
-	assert.Equal(t, "plaintext", conf.Main.Passwords[0], "without key, should pass through")
+	assert.Equal(t, "plaintext", conf.Main.Passwords[0])
+}
+
+func TestDecryptConfig_EncryptedButNoKey(t *testing.T) {
+	os.Unsetenv("TRYSSH_MASTER_KEY")
+	clearMasterKeyForTest()
+
+	// Config with encrypted content but no master key available — should error
+	conf := &MainConfig{}
+	conf.Main.Passwords = []string{"enc:AAAAAA=="}
+
+	err := decryptConfig(conf)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no master key")
 }
 
 func clearMasterKeyForTest() {

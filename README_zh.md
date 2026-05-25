@@ -95,6 +95,7 @@ Available Commands:
   alias       Set, unset, and list aliases, aliases can be used to log in to servers
   create      Create alternative username, port number, password, and login cache information
   delete      Delete alternative username, port number, password, and login cache information
+  encrypt     Encrypt passwords in the configuration file
   get         Get alternative username, port number, password, and login cache information
   help        Help about any command
   prune       Check if all current caches are available and clear the ones that are not available
@@ -398,5 +399,21 @@ tryssh scp 192.168.1.1:/var/log/*.log ./
 
 - **交互式密码输入**：密码通过交互式终端提示输入（不会暴露在 shell 历史中）
 - **敏感信息遮蔽**：密码和密钥在 `get` 输出和日志中被遮蔽显示
-- **配置文件加密**：设置 `TRYSSH_MASTER_KEY` 环境变量即可启用 AES-GCM 加密存储密码
+- **配置文件加密**：使用 `tryssh encrypt` 命令通过主密码加密存储的密码（AES-GCM）。也可以设置 `TRYSSH_MASTER_KEY` 环境变量进行非交互式加密
 - **文件权限保护**：配置文件和目录使用严格权限 (0600/0700)
+
+### encrypt 命令
+
+tryssh 的 `encrypt` 命令用于加密配置文件中存储的所有明文密码。加密后，密码在使用时会自动解密。
+
+#### encrypt 使用举例
+
+```
+# 交互式加密所有密码（会提示输入两次主密码）
+tryssh encrypt
+
+# 通过环境变量加密（无需交互式输入）
+TRYSSH_MASTER_KEY=mypassword tryssh encrypt
+```
+
+> **注意**：如果忘记主密码，加密后的密码将无法恢复。

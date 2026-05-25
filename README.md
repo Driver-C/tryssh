@@ -95,6 +95,7 @@ Available Commands:
   alias       Set, unset, and list aliases, aliases can be used to log in to servers
   create      Create alternative username, port number, password, and login cache information
   delete      Delete alternative username, port number, password, and login cache information
+  encrypt     Encrypt passwords in the configuration file
   get         Get alternative username, port number, password, and login cache information
   help        Help about any command
   prune       Check if all current caches are available and clear the ones that are not available
@@ -399,5 +400,21 @@ tryssh scp 192.168.1.1:/var/log/*.log ./
 
 - **Interactive password input**: Passwords are entered via interactive terminal prompts (never exposed in shell history)
 - **Sensitive info masking**: Passwords and keys are masked in `get` output and logs
-- **Config encryption**: Set the `TRYSSH_MASTER_KEY` environment variable to enable AES-GCM encryption for stored passwords
+- **Config encryption**: Use `tryssh encrypt` to encrypt stored passwords with a master password (AES-GCM). Alternatively, set the `TRYSSH_MASTER_KEY` environment variable for non-interactive encryption
 - **File permissions**: Config files and directories use restrictive permissions (0600/0700)
+
+### Command: encrypt
+
+The `"encrypt"` command encrypts all plaintext passwords stored in the configuration file using a master password. Once encrypted, passwords are automatically decrypted when needed.
+
+#### Example
+
+```
+# Interactively encrypt all passwords (prompts for master password twice)
+tryssh encrypt
+
+# Encrypt using an environment variable (no interactive prompt)
+TRYSSH_MASTER_KEY=mypassword tryssh encrypt
+```
+
+> **Warning**: If you forget your master password, encrypted passwords cannot be recovered.

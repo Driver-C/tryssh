@@ -30,12 +30,6 @@ release/
 .DS_Store
 Thumbs.db
 
-# Claude Code
-.claude/
-
-# OpenSpec (development artifacts, not release)
-openspec/
-
 # goreleaser dist
 dist/
 

@@ -321,6 +321,45 @@ func TestGetMasterKey_AlreadyCached(t *testing.T) {
 	ClearMasterKey()
 }
 
+func TestGetCachedMasterKey_NoKey(t *testing.T) {
+	ClearMasterKey()
+	os.Unsetenv(keyEnvVar)
+
+	key, err := GetCachedMasterKey()
+	assert.NoError(t, err)
+	assert.Nil(t, key)
+}
+
+func TestGetCachedMasterKey_EnvVar(t *testing.T) {
+	ClearMasterKey()
+	t.Setenv(keyEnvVar, "cachedEnvPassword")
+
+	key, err := GetCachedMasterKey()
+	require.NoError(t, err)
+	assert.NotNil(t, key)
+	assert.Equal(t, 32, len(key))
+
+	ClearMasterKey()
+}
+
+func TestGetCachedMasterKey_UsesCache(t *testing.T) {
+	ClearMasterKey()
+	t.Setenv(keyEnvVar, "cacheTestPassword")
+
+	// First call caches via env var
+	key1, err := GetCachedMasterKey()
+	require.NoError(t, err)
+
+	// Remove env var — cached key should still be returned
+	os.Unsetenv(keyEnvVar)
+
+	key2, err := GetCachedMasterKey()
+	require.NoError(t, err)
+	assert.Equal(t, key1, key2)
+
+	ClearMasterKey()
+}
+
 func TestClearMasterKey_WhenNil(t *testing.T) {
 	// ClearMasterKey should be safe to call when masterKey is already nil.
 	ClearMasterKey()
